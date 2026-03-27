@@ -1,2 +1,2 @@
-# sz-prime-solutions-website
+# sz-prime-solutions
 Corporate website for SZ Prime Solutions
