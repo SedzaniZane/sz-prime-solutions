@@ -90,3 +90,28 @@ create table partner_assignments (
   created_at timestamptz not null default now(),
   unique(service_request_id, partner_id)
 );
+
+
+create table customer_notes (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references customers(id) on delete cascade,
+  note text not null,
+  created_by text,
+  created_at timestamptz not null default now()
+);
+
+create table request_events (
+  id uuid primary key default gen_random_uuid(),
+  service_request_id uuid not null references service_requests(id) on delete cascade,
+  event_type text not null,
+  from_status request_status,
+  to_status request_status,
+  detail jsonb not null default '{}'::jsonb,
+  created_by text,
+  created_at timestamptz not null default now()
+);
+
+create index idx_service_requests_customer on service_requests(customer_id);
+create index idx_service_requests_unit_status on service_requests(unit, status);
+create index idx_request_events_request on request_events(service_request_id, created_at desc);
+create index idx_payments_request on payments(service_request_id);
