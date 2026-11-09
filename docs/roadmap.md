@@ -2,15 +2,16 @@
 
 ## Phase 1 — Foundation
 - Public ecosystem website
-- Shared business-unit definitions
+- Final master-brand and business-unit architecture
 - Central data model
-- Initial operations dashboard
+- Operations dashboard
+- Staff authentication and RLS
 - Manual customer routing with structured records
 
-## Phase 2 — WhatsApp + CRM
+## Phase 2 — CRM + WhatsApp
+- Customer and service-request create/edit workflows
 - WhatsApp Business integration
 - Customer intake and service router
-- CRM records
 - Human escalation
 - Multilingual support foundations
 - Automated follow-ups
@@ -19,7 +20,7 @@
 - Quotations
 - Yoco/payment links
 - Booking lifecycle
-- Partner assignments
+- Partner assignments through SZ Prime Plug-Connect
 - Service completion and feedback
 - Revenue reporting
 
@@ -34,9 +35,9 @@
 ## Phase 5 — Platform + external products
 - Customer portal
 - Partner portal
-- ZaNdou Living marketplace capabilities
-- Recurring B2B facilities workflows
-- SZ Business Assistant
-- SZ Tender Assistant
-- SZ Booking Suite
-- SME AI/automation packages
+- SZ Prime Living Accommodations marketplace capabilities
+- Recurring SZ Prime Facilities workflows
+- SZ Prime Business Assistant
+- SZ Prime Tender Assistant
+- SZ Prime Booking Suite
+- SME AI/automation packages through SZ Prime Tech Hub
