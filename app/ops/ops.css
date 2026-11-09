@@ -1,0 +1,237 @@
+* { box-sizing: border-box; }
+
+.ops-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  background: #f2f5f5;
+  color: #16212a;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  background: #0c3540;
+  color: white;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 38px;
+}
+
+.brand-kicker {
+  margin: 0 0 6px;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .13em;
+  color: #8cc7ce;
+}
+
+.sidebar h1 { margin: 0; font-size: 1.75rem; }
+
+.sidebar nav { display: grid; gap: 8px; }
+
+.sidebar nav a {
+  color: #c9d7da;
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 650;
+}
+
+.sidebar nav a:hover,
+.sidebar nav a.active {
+  color: white;
+  background: rgba(255,255,255,.09);
+}
+
+.sidebar-note {
+  margin-top: auto;
+  border-top: 1px solid rgba(255,255,255,.14);
+  padding-top: 20px;
+  color: #c9d7da;
+  font-size: .9rem;
+}
+
+.sidebar-note p { margin-bottom: 0; }
+
+.ops-content {
+  width: min(1280px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 42px 0 70px;
+}
+
+.ops-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 30px;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.ops-header h2 {
+  font-size: clamp(2rem, 4vw, 3.7rem);
+  max-width: 860px;
+  margin-bottom: 0;
+}
+
+.new-request,
+.panel-heading button {
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 16px;
+  background: #0f4c5c;
+  color: white;
+  text-decoration: none;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.metric-card,
+.ops-panel {
+  background: white;
+  border: 1px solid #dfe7e9;
+  border-radius: 24px;
+}
+
+.metric-card { padding: 22px; }
+
+.metric-card span {
+  display: block;
+  color: #66727d;
+  font-size: .9rem;
+}
+
+.metric-card strong {
+  display: block;
+  font-size: 2.4rem;
+  margin: 10px 0 4px;
+}
+
+.metric-card p {
+  margin: 0;
+  color: #76828b;
+  font-size: .86rem;
+}
+
+.ops-panel {
+  padding: 26px;
+  margin-top: 18px;
+}
+
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 22px;
+}
+
+.panel-heading h3,
+.roadmap-panel h3 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.table-wrap { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+th, td {
+  text-align: left;
+  padding: 14px 12px;
+  border-top: 1px solid #edf1f2;
+}
+
+th {
+  color: #74818a;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+td { font-size: .94rem; }
+
+.status {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #eef6f7;
+  color: #0f4c5c;
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.unit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.unit-card {
+  border: 1px solid #e3e9eb;
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.unit-card span {
+  color: #0f4c5c;
+  font-size: .75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.unit-card h4 { margin: 12px 0 6px; }
+.unit-card p { margin: 0; color: #75818a; }
+
+.roadmap-panel {
+  background: #122c35;
+  color: white;
+}
+
+.roadmap-panel .eyebrow { color: #8cc7ce; }
+
+.next-grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 0;
+  border-top: 1px solid rgba(255,255,255,.14);
+}
+
+.next-grid div {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(255,255,255,.14);
+}
+
+.next-grid strong { color: #c7a96b; }
+
+@media (max-width: 1000px) {
+  .ops-shell { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; }
+  .sidebar nav { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .sidebar-note { margin-top: 0; }
+  .metric-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+
+@media (max-width: 700px) {
+  .ops-content { width: min(100% - 24px, 1280px); }
+  .ops-header { flex-direction: column; }
+  .metric-grid, .unit-grid, .next-grid { grid-template-columns: 1fr; }
+}
