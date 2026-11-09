@@ -59,6 +59,7 @@ export default function Home() {
         <div className="actions">
           <a href="#ecosystem" className="button primary">Explore the ecosystem</a>
           <a href="#platform" className="button secondary">See the platform vision</a>
+          <a href="/ops" className="button secondary">Open operations portal</a>
         </div>
       </section>
 
