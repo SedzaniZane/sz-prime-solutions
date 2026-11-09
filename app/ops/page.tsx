@@ -151,7 +151,7 @@ export default async function OperationsPage() {
               <p className="eyebrow">CUSTOMER FLOW</p>
               <h3>Recent service requests</h3>
             </div>
-            <button type="button">Add request</button>
+            <a className="new-request" href="/ops/requests/new">Add request</a>
           </div>
 
           <div className="table-wrap">
