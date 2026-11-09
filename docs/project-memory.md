@@ -50,7 +50,10 @@ Legacy ZaNdou names are retired from the active architecture and should only app
 - South African mobile numbers and customer emails are validated server-side and mobile numbers are normalised to +27 format
 - Submit state prevents accidental repeated request creation
 - Intake operation creates customer, service request and initial audit event atomically
-- Next build priority: request detail/edit workflow, quotations and customer history
+- Request detail/customer profile workspace implemented
+- Staff can edit customer contacts, reassign business units, change request status and service details
+- Internal customer notes and request event history are visible per request
+- Next build priority: quotation workflow, test-data cleanup controls and customer history across multiple requests
 
 ## Operating principle
 
