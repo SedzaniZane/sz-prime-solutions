@@ -1,31 +1,97 @@
 import "./ops.css";
+import { createClient } from "@/utils/supabase/server";
 
-const metrics = [
-  { label: "Open leads", value: "18", detail: "Across all business units" },
-  { label: "Awaiting quotes", value: "7", detail: "Needs pricing or approval" },
-  { label: "Active jobs", value: "11", detail: "Scheduled or in progress" },
-  { label: "Payments pending", value: "5", detail: "Follow-up required" },
-];
+const unitLabels: Record<string, string> = {
+  sz_pristine: "SZ Pristine Solutions",
+  zandou_living: "ZaNdou Living",
+  zandou_relocations: "ZaNdou Relocations",
+  zandou_connect: "ZaNdou Connect",
+  sz_prime_facilities: "SZ Prime Facilities",
+  sz_business_solutions: "SZ Business Solutions",
+  sz_tech_hub: "SZ Tech Hub",
+};
 
-const requests = [
-  { customer: "Lerato M.", unit: "SZ Pristine", service: "Move-out clean", status: "Quoted", source: "WhatsApp" },
-  { customer: "Thabo K.", unit: "ZaNdou Relocations", service: "Student move", status: "New", source: "Website" },
-  { customer: "Maseko Properties", unit: "SZ Prime Facilities", service: "Turnover support", status: "Scheduled", source: "Referral" },
-  { customer: "Naledi Tech", unit: "SZ Business Solutions", service: "WhatsApp automation", status: "Qualified", source: "Website" },
-  { customer: "Anonymous lead", unit: "ZaNdou Living", service: "Accommodation enquiry", status: "New", source: "WhatsApp" },
-];
+const unitCategories: Record<string, string> = {
+  sz_pristine: "Cleaning",
+  zandou_living: "Accommodation",
+  zandou_relocations: "Moving & setup",
+  zandou_connect: "Service brokerage",
+  sz_prime_facilities: "B2B facilities",
+  sz_business_solutions: "Business enablement",
+  sz_tech_hub: "Technology engine",
+};
 
-const units = [
-  ["SZ Pristine Solutions", "Cleaning", "4 active"],
-  ["ZaNdou Living", "Accommodation", "3 active"],
-  ["ZaNdou Relocations", "Moving & setup", "4 active"],
-  ["ZaNdou Connect", "Service brokerage", "2 active"],
-  ["SZ Prime Facilities", "B2B facilities", "5 active"],
-  ["SZ Business Solutions", "Business enablement", "6 active"],
-  ["SZ Tech Hub", "Technology engine", "5 active"],
-];
+const unitKeys = Object.keys(unitLabels);
 
-export default function OperationsPage() {
+function titleCase(value: string) {
+  return value
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+export default async function OperationsPage() {
+  const supabase = await createClient();
+
+  const [
+    { data: profile },
+    { count: openLeads },
+    { count: awaitingQuotes },
+    { count: activeJobs },
+    { count: pendingPayments },
+    { data: recentRequests },
+    { data: unitRows },
+  ] = await Promise.all([
+    supabase.from("staff_profiles").select("full_name, role").maybeSingle(),
+    supabase
+      .from("service_requests")
+      .select("*", { count: "exact", head: true })
+      .in("status", ["new", "qualified"]),
+    supabase
+      .from("service_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "qualified"),
+    supabase
+      .from("service_requests")
+      .select("*", { count: "exact", head: true })
+      .in("status", ["scheduled", "in_progress"]),
+    supabase
+      .from("payments")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending"),
+    supabase
+      .from("service_requests")
+      .select("id, unit, service_type, status, source, created_at, customers(full_name)")
+      .order("created_at", { ascending: false })
+      .limit(8),
+    supabase
+      .from("service_requests")
+      .select("unit, status"),
+  ]);
+
+  const metrics = [
+    { label: "Open leads", value: openLeads ?? 0, detail: "New or qualified opportunities" },
+    { label: "Awaiting quotes", value: awaitingQuotes ?? 0, detail: "Qualified requests needing commercial action" },
+    { label: "Active jobs", value: activeJobs ?? 0, detail: "Scheduled or currently in progress" },
+    { label: "Payments pending", value: pendingPayments ?? 0, detail: "Outstanding payment records" },
+  ];
+
+  const unitActivity = unitKeys.map((key) => {
+    const active = (unitRows ?? []).filter(
+      (row) =>
+        row.unit === key &&
+        !["completed", "cancelled"].includes(row.status),
+    ).length;
+
+    return {
+      key,
+      name: unitLabels[key],
+      category: unitCategories[key],
+      activity: `${active} active`,
+    };
+  });
+
+  const isStaff = Boolean(profile);
+
   return (
     <main className="ops-shell">
       <aside className="sidebar">
@@ -44,8 +110,8 @@ export default function OperationsPage() {
         </nav>
 
         <div className="sidebar-note">
-          <strong>Foundation mode</strong>
-          <p>This dashboard currently uses sample data while Supabase, authentication and live workflows are connected.</p>
+          <strong>{profile?.full_name || "Authenticated user"}</strong>
+          <p>{profile ? `${titleCase(profile.role)} access` : "Staff profile setup required"}</p>
         </div>
       </aside>
 
@@ -53,10 +119,21 @@ export default function OperationsPage() {
         <header className="ops-header" id="overview">
           <div>
             <p className="eyebrow">MASTER CONTROL</p>
-            <h2>Good morning. Here is the SZ Prime operating picture.</h2>
+            <h2>Here is the live SZ Prime operating picture.</h2>
           </div>
           <a className="new-request" href="/">Public site</a>
         </header>
+
+        {!isStaff && (
+          <section className="ops-panel">
+            <p className="eyebrow">ACCESS SETUP</p>
+            <h3>Your login works, but this account is not yet registered as SZ Prime staff.</h3>
+            <p>
+              Add this authenticated user to the <code>staff_profiles</code> table before CRM data
+              will be visible. Row Level Security is intentionally blocking access until then.
+            </p>
+          </section>
+        )}
 
         <section className="metric-grid">
           {metrics.map((metric) => (
@@ -89,15 +166,21 @@ export default function OperationsPage() {
                 </tr>
               </thead>
               <tbody>
-                {requests.map((request) => (
-                  <tr key={request.customer + request.service}>
-                    <td>{request.customer}</td>
-                    <td>{request.unit}</td>
-                    <td>{request.service}</td>
-                    <td>{request.source}</td>
-                    <td><span className="status">{request.status}</span></td>
+                {(recentRequests ?? []).length === 0 ? (
+                  <tr>
+                    <td colSpan={5}>No visible service requests yet.</td>
                   </tr>
-                ))}
+                ) : (
+                  (recentRequests ?? []).map((request: any) => (
+                    <tr key={request.id}>
+                      <td>{request.customers?.full_name ?? "Unknown customer"}</td>
+                      <td>{unitLabels[request.unit] ?? titleCase(request.unit)}</td>
+                      <td>{request.service_type}</td>
+                      <td>{titleCase(request.source ?? "unknown")}</td>
+                      <td><span className="status">{titleCase(request.status)}</span></td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -111,11 +194,11 @@ export default function OperationsPage() {
             </div>
           </div>
           <div className="unit-grid">
-            {units.map(([name, category, activity]) => (
-              <article className="unit-card" key={name}>
-                <span>{category}</span>
-                <h4>{name}</h4>
-                <p>{activity}</p>
+            {unitActivity.map((unit) => (
+              <article className="unit-card" key={unit.key}>
+                <span>{unit.category}</span>
+                <h4>{unit.name}</h4>
+                <p>{unit.activity}</p>
               </article>
             ))}
           </div>
@@ -123,16 +206,16 @@ export default function OperationsPage() {
 
         <section className="ops-panel roadmap-panel">
           <div>
-            <p className="eyebrow">NEXT CONNECTIONS</p>
-            <h3>What this dashboard becomes next</h3>
+            <p className="eyebrow">LIVE FOUNDATION</p>
+            <h3>The CRM is now reading from the production database.</h3>
           </div>
           <div className="next-grid">
-            <div><strong>01</strong><span>Supabase live CRM data</span></div>
-            <div><strong>02</strong><span>Staff authentication and roles</span></div>
-            <div><strong>03</strong><span>WhatsApp lead ingestion</span></div>
-            <div><strong>04</strong><span>Quotes and Yoco payment states</span></div>
-            <div><strong>05</strong><span>Partner matching and assignments</span></div>
-            <div><strong>06</strong><span>Revenue and cross-sell reporting</span></div>
+            <div><strong>01</strong><span>Staff authentication and RLS</span></div>
+            <div><strong>02</strong><span>Live customers and requests</span></div>
+            <div><strong>03</strong><span>Next: create/edit workflows</span></div>
+            <div><strong>04</strong><span>Next: WhatsApp lead ingestion</span></div>
+            <div><strong>05</strong><span>Next: Yoco payment states</span></div>
+            <div><strong>06</strong><span>Next: revenue and cross-sell reporting</span></div>
           </div>
         </section>
       </section>
