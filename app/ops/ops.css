@@ -540,3 +540,58 @@ td { font-size: .94rem; }
     grid-template-columns: 1fr;
   }
 }
+
+
+.detail-card-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.detail-card-heading h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.mini-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #0f4c5c;
+  color: white;
+  text-decoration: none;
+  font-size: .82rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.quote-item {
+  display: grid;
+  gap: 4px;
+}
+
+.quote-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.quote-total-note {
+  border: 1px solid #dfe7e9;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  color: #56636c;
+}
+
+@media (max-width: 600px) {
+  .detail-card-heading,
+  .quote-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
