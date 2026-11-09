@@ -595,3 +595,136 @@ td { font-size: .94rem; }
     align-items: flex-start;
   }
 }
+
+
+/* Mobile overflow hardening */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.ops-shell,
+.ops-content,
+.metric-grid,
+.metric-card,
+.ops-panel,
+.panel-heading,
+.unit-grid,
+.unit-card,
+.request-detail-shell,
+.detail-grid,
+.detail-main,
+.detail-side {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 700px) {
+  .ops-shell {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .sidebar {
+    padding: 20px 16px;
+    gap: 20px;
+  }
+
+  .sidebar nav {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .sidebar nav a {
+    padding: 9px 10px;
+    font-size: .9rem;
+  }
+
+  .ops-content {
+    width: 100%;
+    padding: 24px 12px 48px;
+  }
+
+  .ops-header {
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .ops-header h2 {
+    font-size: clamp(1.8rem, 8vw, 2.5rem);
+    line-height: 1.05;
+  }
+
+  .metric-grid {
+    gap: 10px;
+  }
+
+  .metric-card {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .metric-card span {
+    font-size: .85rem;
+  }
+
+  .metric-card strong {
+    font-size: 2rem;
+  }
+
+  .metric-card p {
+    font-size: .82rem;
+    line-height: 1.45;
+  }
+
+  .ops-panel {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .panel-heading {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .panel-heading h3,
+  .roadmap-panel h3 {
+    font-size: 1.3rem;
+  }
+
+  .new-request,
+  .button-link {
+    white-space: normal;
+    text-align: center;
+  }
+
+  .unit-grid {
+    gap: 10px;
+  }
+
+  .ops-form-page {
+    padding: 24px 12px 48px;
+  }
+
+  .request-form fieldset {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .form-topbar h1 {
+    font-size: clamp(1.8rem, 9vw, 2.6rem);
+  }
+
+  .detail-card {
+    padding: 18px;
+    border-radius: 18px;
+  }
+}
