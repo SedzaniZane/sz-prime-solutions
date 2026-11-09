@@ -2,23 +2,23 @@ import "./ops.css";
 import { createClient } from "@/utils/supabase/server";
 
 const unitLabels: Record<string, string> = {
-  sz_pristine: "SZ Pristine Solutions",
-  zandou_living: "ZaNdou Living",
-  zandou_relocations: "ZaNdou Relocations",
-  zandou_connect: "ZaNdou Connect",
-  sz_prime_facilities: "SZ Prime Facilities",
-  sz_business_solutions: "SZ Business Solutions",
-  sz_tech_hub: "SZ Tech Hub",
+  pristine_cleaning: "SZ Pristine Cleaning",
+  prime_living: "SZ Prime Living Accommodations",
+  prime_relocations: "SZ Prime Relocations",
+  prime_plug_connect: "SZ Prime Plug-Connect",
+  prime_facilities: "SZ Prime Facilities",
+  prime_business_solutions: "SZ Prime Business Solutions",
+  prime_tech_hub: "SZ Prime Tech Hub",
 };
 
 const unitCategories: Record<string, string> = {
-  sz_pristine: "Cleaning",
-  zandou_living: "Accommodation",
-  zandou_relocations: "Moving & setup",
-  zandou_connect: "Service brokerage",
-  sz_prime_facilities: "B2B facilities",
-  sz_business_solutions: "Business enablement",
-  sz_tech_hub: "Technology engine",
+  pristine_cleaning: "Cleaning",
+  prime_living: "Accommodation",
+  prime_relocations: "Moving & setup",
+  prime_plug_connect: "Service brokerage",
+  prime_facilities: "B2B facilities",
+  prime_business_solutions: "Business enablement",
+  prime_tech_hub: "Technology engine",
 };
 
 const unitKeys = Object.keys(unitLabels);
