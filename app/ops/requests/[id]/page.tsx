@@ -26,7 +26,7 @@ const statuses = [
 ] as const;
 
 type Params = Promise<{ id: string }>;
-type SearchParams = Promise<{ error?: string; saved?: string }>;
+type SearchParams = Promise<{ error?: string; saved?: string; quote_created?: string }>;
 
 function fail(id: string, message: string): never {
   redirect(`/ops/requests/${id}?error=${encodeURIComponent(message)}`);
@@ -157,7 +157,7 @@ export default async function RequestDetailPage({
   searchParams: SearchParams;
 }) {
   const { id } = await params;
-  const { error, saved } = await searchParams;
+  const { error, saved, quote_created } = await searchParams;
   const supabase = await createClient();
 
   const { data: request, error: requestError } = await supabase
@@ -191,7 +191,7 @@ export default async function RequestDetailPage({
   const customer = Array.isArray(request.customers) ? request.customers[0] : request.customers;
   if (!customer) notFound();
 
-  const [{ data: notes }, { data: events }] = await Promise.all([
+  const [{ data: notes }, { data: events }, { data: quotations }] = await Promise.all([
     supabase
       .from("customer_notes")
       .select("id, note, created_by, created_at")
@@ -200,6 +200,11 @@ export default async function RequestDetailPage({
     supabase
       .from("request_events")
       .select("id, event_type, from_status, to_status, detail, created_by, created_at")
+      .eq("service_request_id", id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("quotations")
+      .select("id, subtotal, fees, total, currency, status, valid_until, created_at")
       .eq("service_request_id", id)
       .order("created_at", { ascending: false }),
   ]);
@@ -223,6 +228,7 @@ export default async function RequestDetailPage({
 
         {error && <div className="form-error">{error}</div>}
         {saved && <div className="form-success">Changes saved successfully.</div>}
+        {quote_created && <div className="form-success">Quotation created successfully.</div>}
 
         <div className="detail-grid">
           <section className="detail-main">
@@ -323,6 +329,46 @@ export default async function RequestDetailPage({
                 <div><dt>Created</dt><dd>{new Date(request.created_at).toLocaleString("en-ZA")}</dd></div>
                 <div><dt>Updated</dt><dd>{new Date(request.updated_at).toLocaleString("en-ZA")}</dd></div>
               </dl>
+            </section>
+
+
+            <section className="detail-card">
+              <div className="detail-card-heading">
+                <div>
+                  <p className="eyebrow">QUOTATIONS</p>
+                  <h3>Commercial offers</h3>
+                </div>
+                <Link href={`/ops/requests/${id}/quotation/new`} className="mini-action">
+                  Create quote
+                </Link>
+              </div>
+
+              <div className="timeline-list">
+                {(quotations ?? []).length === 0 ? (
+                  <p className="empty-copy">No quotations created yet.</p>
+                ) : (
+                  (quotations ?? []).map((quote) => (
+                    <article key={quote.id} className="quote-item">
+                      <div className="quote-row">
+                        <strong>
+                          {new Intl.NumberFormat("en-ZA", {
+                            style: "currency",
+                            currency: quote.currency ?? "ZAR",
+                          }).format(Number(quote.total ?? 0))}
+                        </strong>
+                        <span className="status">{String(quote.status).replaceAll("_", " ")}</span>
+                      </div>
+                      <p>
+                        Subtotal R{Number(quote.subtotal ?? 0).toFixed(2)} · Fees R{Number(quote.fees ?? 0).toFixed(2)}
+                      </p>
+                      <small>
+                        Created {new Date(quote.created_at).toLocaleString("en-ZA")}
+                        {quote.valid_until ? ` · Valid until ${quote.valid_until}` : ""}
+                      </small>
+                    </article>
+                  ))
+                )}
+              </div>
             </section>
 
             <section className="detail-card">
