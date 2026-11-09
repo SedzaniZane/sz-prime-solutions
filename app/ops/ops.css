@@ -414,3 +414,129 @@ td { font-size: .94rem; }
   opacity: .65;
   cursor: wait;
 }
+
+
+.table-link {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.table-link:hover {
+  color: #0f4c5c;
+  text-decoration: underline;
+}
+
+.request-detail-shell {
+  width: min(1240px, 100%);
+  margin: 0 auto;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(300px, .7fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.detail-main {
+  min-width: 0;
+}
+
+.detail-side {
+  display: grid;
+  gap: 18px;
+}
+
+.detail-card {
+  background: white;
+  border: 1px solid #dfe7e9;
+  border-radius: 24px;
+  padding: 22px;
+}
+
+.detail-card dl {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.detail-card dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #edf1f2;
+}
+
+.detail-card dt {
+  color: #74818a;
+  font-size: .84rem;
+}
+
+.detail-card dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 700;
+}
+
+.note-form {
+  display: grid;
+  gap: 10px;
+}
+
+.note-form textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid #cad6da;
+  border-radius: 12px;
+  padding: 11px 12px;
+  font: inherit;
+}
+
+.note-form button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: #0f4c5c;
+  color: white;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.timeline-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.timeline-list article {
+  border-top: 1px solid #edf1f2;
+  padding-top: 12px;
+}
+
+.timeline-list article p {
+  margin: 4px 0;
+  color: #4f5f69;
+}
+
+.timeline-list article small,
+.empty-copy {
+  color: #7c8890;
+}
+
+.form-success {
+  margin-bottom: 18px;
+  border: 1px solid #b8ddc8;
+  background: #f2fbf5;
+  color: #21673c;
+  padding: 13px 15px;
+  border-radius: 14px;
+}
+
+@media (max-width: 900px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
