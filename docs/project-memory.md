@@ -45,7 +45,10 @@ Legacy ZaNdou names are retired from the active architecture and should only app
 - First administrator profile operational
 - Operations dashboard reads live CRM data
 - Customer/service data currently at initial/empty state
-- First CRM write workflow implemented: Add Customer + Service Request
+- First CRM write workflow implemented: staff-facing Customer + Service Request intake
+- Intake wording explicitly distinguishes customer data from staff/admin data
+- South African mobile numbers and customer emails are validated server-side and mobile numbers are normalised to +27 format
+- Submit state prevents accidental repeated request creation
 - Intake operation creates customer, service request and initial audit event atomically
 - Next build priority: request detail/edit workflow, quotations and customer history
 
