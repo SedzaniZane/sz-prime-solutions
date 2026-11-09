@@ -1,23 +1,23 @@
 const units = [
   {
-    name: "SZ Pristine Solutions",
-    category: "Cleaning",
-    description: "Residential, move-in, move-out, turnover and commercial cleaning services.",
-  },
-  {
-    name: "ZaNdou Living",
+    name: "SZ Prime Living Accommodations",
     category: "Accommodation",
-    description: "Accommodation discovery, rental support, landlord connections and property services.",
+    description: "Accommodation discovery, rental support, landlord connections and practical living support.",
   },
   {
-    name: "ZaNdou Relocations",
+    name: "SZ Prime Relocations",
     category: "Moving & Setup",
     description: "Moving, transport coordination, relocation support and move-in setup.",
   },
   {
-    name: "ZaNdou Connect",
+    name: "SZ Pristine Cleaning",
+    category: "Cleaning",
+    description: "Residential, move-in, move-out, turnover and commercial cleaning services.",
+  },
+  {
+    name: "SZ Prime Plug-Connect",
     category: "Service Brokerage",
-    description: "A trusted-provider coordination layer for practical household and business needs.",
+    description: "A trusted-provider connection layer for practical household and business needs.",
   },
   {
     name: "SZ Prime Facilities",
@@ -25,14 +25,14 @@ const units = [
     description: "Recurring facilities, property and vendor-coordination support for businesses and property clients.",
   },
   {
-    name: "SZ Business Solutions",
-    category: "Business Enablement",
-    description: "Customer-facing AI, automation, digital transformation and business support solutions.",
-  },
-  {
-    name: "SZ Tech Hub",
+    name: "SZ Prime Tech Hub",
     category: "Technology Engine",
     description: "Websites, applications, dashboards, automations, AI agents and internal platforms.",
+  },
+  {
+    name: "SZ Prime Business Solutions",
+    category: "Business Enablement",
+    description: "SME support, AI and automation enablement, business systems and practical growth support.",
   },
 ];
 
@@ -40,7 +40,7 @@ const journey = [
   "Customer enters through WhatsApp, website or a business unit",
   "SZ Prime identifies the need and customer type",
   "A central customer record is created or matched",
-  "The request is routed to the right unit or vetted partner",
+  "The request is routed to the right SZ Prime unit or vetted partner",
   "Quote, approval and payment are coordinated",
   "Service delivery is tracked centrally",
   "Feedback, repeat service and cross-sell opportunities are retained",
@@ -54,7 +54,7 @@ export default function Home() {
         <h1>One company. Multiple specialised solutions. One coordinated customer experience.</h1>
         <p className="lead">
           SZ Prime Solutions is building an integrated South African service ecosystem connecting
-          living, moving, cleaning, facilities, trusted providers, business support and technology.
+          accommodation, relocations, cleaning, trusted providers, facilities, technology and business support.
         </p>
         <div className="actions">
           <a href="#ecosystem" className="button primary">Explore the ecosystem</a>
@@ -101,12 +101,12 @@ export default function Home() {
       <section className="section split">
         <div>
           <p className="eyebrow">BUILD FIRST, PRODUCTISE LATER</p>
-          <h2>SZ Tech Hub becomes the internal technology engine.</h2>
+          <h2>SZ Prime Tech Hub becomes the internal technology engine.</h2>
         </div>
         <p>
           The first systems are built for SZ Prime itself: CRM, WhatsApp assistant, quotations,
           payments, operations dashboards, partner management and tender intelligence. Proven
-          systems can later be packaged and sold to SMEs as SZ Tech Hub products.
+          systems can later be packaged and sold to SMEs through SZ Prime Tech Hub.
         </p>
       </section>
 
