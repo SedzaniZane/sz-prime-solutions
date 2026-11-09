@@ -65,6 +65,7 @@ Feedback + repeat / cross-sell
 
 ## Documentation
 
+- [Project memory / source of truth](docs/project-memory.md)
 - [Canonical brand architecture](docs/brand-architecture.md)
 - [Platform architecture](docs/architecture.md)
 - [Product roadmap](docs/roadmap.md)
