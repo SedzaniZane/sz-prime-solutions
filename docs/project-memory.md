@@ -45,7 +45,9 @@ Legacy ZaNdou names are retired from the active architecture and should only app
 - First administrator profile operational
 - Operations dashboard reads live CRM data
 - Customer/service data currently at initial/empty state
-- Next build priority: create/edit customer and service-request workflows
+- First CRM write workflow implemented: Add Customer + Service Request
+- Intake operation creates customer, service request and initial audit event atomically
+- Next build priority: request detail/edit workflow, quotations and customer history
 
 ## Operating principle
 
