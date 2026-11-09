@@ -1,3 +1,4 @@
+import Link from "next/link";
 import "./ops.css";
 import { createClient } from "@/utils/supabase/server";
 
@@ -173,9 +174,9 @@ export default async function OperationsPage() {
                 ) : (
                   (recentRequests ?? []).map((request: any) => (
                     <tr key={request.id}>
-                      <td>{request.customers?.full_name ?? "Unknown customer"}</td>
+                      <td><Link className="table-link" href={`/ops/requests/${request.id}`}>{request.customers?.full_name ?? "Unknown customer"}</Link></td>
                       <td>{unitLabels[request.unit] ?? titleCase(request.unit)}</td>
-                      <td>{request.service_type}</td>
+                      <td><Link className="table-link" href={`/ops/requests/${request.id}`}>{request.service_type}</Link></td>
                       <td>{titleCase(request.source ?? "unknown")}</td>
                       <td><span className="status">{titleCase(request.status)}</span></td>
                     </tr>
