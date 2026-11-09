@@ -2,15 +2,18 @@
 
 SZ Prime Solutions (Pty) Ltd is the parent company and operating backbone for an integrated South African service ecosystem.
 
-## Ecosystem
+## Final brand architecture
 
-- **SZ Pristine Solutions** — cleaning and space preparation
-- **ZaNdou Living** — accommodation and property support
-- **ZaNdou Relocations** — moving, transport and setup
-- **ZaNdou Connect** — trusted-provider coordination
-- **SZ Prime Facilities** — B2B facilities and property support
-- **SZ Business Solutions** — AI, automation and business enablement
-- **SZ Tech Hub** — technology, software, dashboards, chatbots and internal platforms
+- **SZ Prime Solutions (Pty) Ltd** — parent company / master brand
+- **SZ Prime Living Accommodations** — accommodation, rentals and living support
+- **SZ Prime Relocations** — moving, transport and relocation services
+- **SZ Pristine Cleaning** — residential, commercial and move-related cleaning
+- **SZ Prime Plug-Connect** — trusted service-provider connections and brokerage
+- **SZ Prime Facilities** — facilities management and B2B operational services
+- **SZ Prime Tech Hub** — technology, AI, automation, websites and digital systems
+- **SZ Prime Business Solutions** — SME support, consulting and business enablement
+
+These names are the canonical operating names for the ecosystem.
 
 ## Platform direction
 
@@ -38,22 +41,19 @@ Feedback + repeat / cross-sell
 
 ## Current foundation
 
-This branch contains:
-
 - Next.js + TypeScript application shell
 - ecosystem landing page
 - internal Operations / CRM dashboard at `/ops`
-- Supabase/PostgreSQL starter schema
+- Supabase/PostgreSQL production schema
+- staff authentication and Row Level Security
 - customer notes and request audit history
 - quotation, payment and partner-assignment models
+- Vercel production deployment
 - platform architecture documentation
 - phased product roadmap
 
-The Operations dashboard currently uses representative sample data while live Supabase connections, authentication and automations are introduced.
-
 ## Planned integrations
 
-- Supabase / PostgreSQL
 - WhatsApp Business Platform
 - Make or n8n
 - Yoco
@@ -63,17 +63,10 @@ The Operations dashboard currently uses representative sample data while live Su
 - tender intelligence
 - analytics and revenue reporting
 
-## Local development
-
-```bash
-npm install
-npm run dev
-```
-
-Create `.env.local` from `.env.example` and add only development credentials.
-
 ## Documentation
 
+- [Project memory / source of truth](docs/project-memory.md)
+- [Canonical brand architecture](docs/brand-architecture.md)
 - [Platform architecture](docs/architecture.md)
 - [Product roadmap](docs/roadmap.md)
 - [CRM operating model](docs/crm-operating-model.md)
@@ -81,4 +74,4 @@ Create `.env.local` from `.env.example` and add only development credentials.
 
 ## Development principle
 
-Build for SZ Prime internally first, validate operational value, standardise the workflow, then package proven capabilities through SZ Tech Hub for external clients.
+Build for SZ Prime internally first, validate operational value, standardise the workflow, then package proven capabilities through SZ Prime Tech Hub for external clients.

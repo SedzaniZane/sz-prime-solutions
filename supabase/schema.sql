@@ -1,13 +1,13 @@
 create extension if not exists "pgcrypto";
 
 create type business_unit as enum (
-  'sz_pristine',
-  'zandou_living',
-  'zandou_relocations',
-  'zandou_connect',
-  'sz_prime_facilities',
-  'sz_business_solutions',
-  'sz_tech_hub'
+  'pristine_cleaning',
+  'prime_living',
+  'prime_relocations',
+  'prime_plug_connect',
+  'prime_facilities',
+  'prime_business_solutions',
+  'prime_tech_hub'
 );
 
 create type request_status as enum (
