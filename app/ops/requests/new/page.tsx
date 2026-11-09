@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { validateCustomerContacts } from "@/lib/customer-validation";
+import SubmitButton from "./submit-button";
 import "../../ops.css";
 
 const units = [
@@ -15,6 +17,10 @@ const units = [
 
 type SearchParams = Promise<{ error?: string }>;
 
+function fail(message: string): never {
+  redirect(`/ops/requests/new?error=${encodeURIComponent(message)}`);
+}
+
 async function createRequest(formData: FormData) {
   "use server";
 
@@ -22,29 +28,40 @@ async function createRequest(formData: FormData) {
   const serviceType = String(formData.get("service_type") ?? "").trim();
   const unit = String(formData.get("unit") ?? "");
   const preferredDate = String(formData.get("preferred_date") ?? "").trim();
+  const phoneInput = String(formData.get("phone") ?? "");
+  const emailInput = String(formData.get("email") ?? "");
 
-  if (!fullName || !serviceType || !units.some(([value]) => value === unit)) {
-    redirect("/ops/requests/new?error=Please%20complete%20all%20required%20fields.");
+  if (!fullName) fail("Enter the customer's full name.");
+  if (!serviceType) fail("Enter the service the customer is requesting.");
+  if (!units.some(([value]) => value === unit)) fail("Select a valid SZ Prime business unit.");
+
+  const contacts = validateCustomerContacts(phoneInput, emailInput);
+  if (!contacts.ok) fail(contacts.message);
+
+  let preferredDateIso: string | null = null;
+  if (preferredDate) {
+    const date = new Date(preferredDate);
+    if (Number.isNaN(date.getTime())) fail("Enter a valid requested service date and time.");
+    preferredDateIso = date.toISOString();
   }
 
   const supabase = await createClient();
 
   const { error } = await supabase.rpc("create_customer_service_request", {
     p_full_name: fullName,
-    p_phone: String(formData.get("phone") ?? ""),
-    p_email: String(formData.get("email") ?? ""),
+    p_phone: contacts.phone,
+    p_email: contacts.email,
     p_preferred_language: String(formData.get("preferred_language") ?? "English"),
     p_location_text: String(formData.get("location_text") ?? ""),
     p_unit: unit,
     p_service_type: serviceType,
     p_description: String(formData.get("description") ?? ""),
-    p_preferred_date: preferredDate ? new Date(preferredDate).toISOString() : null,
-    p_source: String(formData.get("source") ?? "staff"),
+    p_preferred_date: preferredDateIso,
+    p_source: String(formData.get("source") ?? "other"),
   });
 
   if (error) {
-    const message = encodeURIComponent(error.message || "Unable to create request.");
-    redirect(`/ops/requests/new?error=${message}`);
+    fail(error.message || "Unable to create the customer request.");
   }
 
   redirect("/ops");
@@ -62,10 +79,11 @@ export default async function NewRequestPage({
       <section className="ops-form-shell">
         <div className="form-topbar">
           <div>
-            <p className="eyebrow">CUSTOMER INTAKE</p>
-            <h1>Add customer + service request</h1>
+            <p className="eyebrow">STAFF CUSTOMER INTAKE</p>
+            <h1>Capture a new customer request</h1>
             <p>
-              Create the customer record and their first SZ Prime service request in one step.
+              This is an internal SZ Prime staff form. Record the customer's contact details,
+              then capture the service they are requesting.
             </p>
           </div>
           <Link href="/ops" className="button-link">Back to Operations</Link>
@@ -75,25 +93,46 @@ export default async function NewRequestPage({
 
         <form action={createRequest} className="request-form">
           <fieldset>
-            <legend>Customer details</legend>
+            <legend>Customer contact details</legend>
+            <p className="fieldset-help">
+              Enter the customer's information, not the staff member's. At least one contact method
+              (mobile number or email address) is required.
+            </p>
+
             <div className="form-grid">
               <label>
-                Full name *
-                <input name="full_name" required autoComplete="name" />
+                Customer full name *
+                <input name="full_name" required autoComplete="name" placeholder="e.g. Naledi Mokoena" />
               </label>
 
               <label>
-                Phone
-                <input name="phone" type="tel" autoComplete="tel" placeholder="+27..." />
+                Customer mobile number
+                <input
+                  name="phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="e.g. 082 123 4567"
+                  pattern="[+0-9()\s-]{10,20}"
+                  title="Enter a South African mobile number such as 082 123 4567 or +27 82 123 4567"
+                />
+                <span className="field-hint">We store valid South African mobile numbers in +27 format.</span>
               </label>
 
               <label>
-                Email
-                <input name="email" type="email" autoComplete="email" />
+                Customer email address
+                <input
+                  name="email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="e.g. customer@example.com"
+                />
+                <span className="field-hint">The browser and server both validate the email format.</span>
               </label>
 
               <label>
-                Preferred language
+                Customer preferred language
                 <select name="preferred_language" defaultValue="English">
                   <option>English</option>
                   <option>Tshivenda</option>
@@ -107,17 +146,22 @@ export default async function NewRequestPage({
               </label>
 
               <label className="form-span-2">
-                Location / area
-                <input name="location_text" placeholder="e.g. Menlyn, Pretoria" />
+                Customer suburb / area
+                <input name="location_text" placeholder="e.g. Arcadia, Pretoria" />
               </label>
             </div>
           </fieldset>
 
           <fieldset>
-            <legend>Service request</legend>
+            <legend>Request details</legend>
+            <p className="fieldset-help">
+              Select the SZ Prime unit that should handle the enquiry and describe the actual
+              service required.
+            </p>
+
             <div className="form-grid">
               <label>
-                Business unit *
+                Assigned business unit *
                 <select name="unit" defaultValue="pristine_cleaning" required>
                   {units.map(([value, label]) => (
                     <option value={value} key={value}>{label}</option>
@@ -126,37 +170,41 @@ export default async function NewRequestPage({
               </label>
 
               <label>
-                Service *
+                Service requested *
                 <input
                   name="service_type"
                   required
                   placeholder="e.g. Move-out cleaning"
                 />
+                <span className="field-hint">
+                  Use a short service name. Put the customer's full explanation below.
+                </span>
               </label>
 
               <label>
-                Preferred date
+                Requested service date / time
                 <input name="preferred_date" type="datetime-local" />
               </label>
 
               <label>
-                Lead source
-                <select name="source" defaultValue="staff">
-                  <option value="staff">Staff capture</option>
+                How did the customer contact us?
+                <select name="source" defaultValue="whatsapp">
                   <option value="whatsapp">WhatsApp</option>
                   <option value="website">Website</option>
-                  <option value="phone">Phone</option>
+                  <option value="phone">Phone call</option>
                   <option value="referral">Referral</option>
                   <option value="social_media">Social media</option>
+                  <option value="walk_in">Walk-in / in person</option>
+                  <option value="other">Other / staff-created</option>
                 </select>
               </label>
 
               <label className="form-span-2">
-                Request description
+                Customer request notes
                 <textarea
                   name="description"
                   rows={5}
-                  placeholder="Capture the customer's requirements, quantities, access notes or other context."
+                  placeholder="e.g. Customer is moving out of a two-bedroom flat and needs a full move-out clean before key handover."
                 />
               </label>
             </div>
@@ -164,7 +212,7 @@ export default async function NewRequestPage({
 
           <div className="form-actions">
             <Link href="/ops" className="button-link secondary-action">Cancel</Link>
-            <button type="submit">Create request</button>
+            <SubmitButton />
           </div>
         </form>
       </section>
