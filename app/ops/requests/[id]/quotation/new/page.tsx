@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import "../../../ops.css";
+import "../../../../ops.css";
 
 type Params = Promise<{ id: string }>;
 type SearchParams = Promise<{ error?: string }>;
