@@ -153,9 +153,7 @@ export default async function QuotationPage({
           <Link href={`/ops/requests/${quote.service_request_id}`} className="button-link secondary-action">
             Back to request
           </Link>
-          <button type="button" onClick={undefined} className="print-hint">
-            Use browser Print → Save as PDF
-          </button>
+          <span className="print-hint">Use browser Print → Save as PDF</span>
         </div>
       </section>
 
