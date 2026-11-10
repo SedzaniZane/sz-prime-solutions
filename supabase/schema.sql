@@ -60,12 +60,28 @@ create table partners (
 create table quotations (
   id uuid primary key default gen_random_uuid(),
   service_request_id uuid not null references service_requests(id) on delete cascade,
+  quotation_number text not null unique,
   currency text not null default 'ZAR',
   subtotal numeric(12,2) not null default 0,
   fees numeric(12,2) not null default 0,
   total numeric(12,2) generated always as (subtotal + fees) stored,
   status text not null default 'draft',
+  approval_status text not null default 'not_requested'
+    check (approval_status in ('not_requested', 'pending', 'accepted', 'declined')),
+  approved_at timestamptz,
+  declined_at timestamptz,
   valid_until date,
+  created_at timestamptz not null default now()
+);
+
+create table quotation_items (
+  id uuid primary key default gen_random_uuid(),
+  quotation_id uuid not null references quotations(id) on delete cascade,
+  description text not null,
+  quantity numeric(10,2) not null default 1 check (quantity > 0),
+  unit_price numeric(12,2) not null check (unit_price >= 0),
+  line_total numeric(12,2) generated always as (quantity * unit_price) stored,
+  sort_order integer not null default 0,
   created_at timestamptz not null default now()
 );
 
@@ -115,3 +131,5 @@ create index idx_service_requests_customer on service_requests(customer_id);
 create index idx_service_requests_unit_status on service_requests(unit, status);
 create index idx_request_events_request on request_events(service_request_id, created_at desc);
 create index idx_payments_request on payments(service_request_id);
+create index idx_quotation_items_quote on quotation_items(quotation_id, sort_order);
+create unique index idx_quotations_number on quotations(quotation_number);
