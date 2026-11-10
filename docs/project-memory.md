@@ -53,10 +53,12 @@ Legacy ZaNdou names are retired from the active architecture and should only app
 - Request detail/customer profile workspace implemented
 - Staff can edit customer contacts, reassign business units, change request status and service details
 - Internal customer notes and request event history are visible per request
-- Quotation workflow implemented with subtotal, additional fees, total, validity date and draft/sent states
+- Quotation workflow supports priced line items, additional fees, calculated totals, validity dates and draft/sent states
+- Each quotation receives an SZQ reference number and has a printable SZ Prime-branded document view suitable for browser Print → Save as PDF
+- Customer approval is tracked as pending, accepted or declined; accepted quotations advance the request to awaiting_payment
 - Sent quotations move requests into the quoted stage and create audit events
 - Planned location enhancement: customer/service addresses should later support map pin capture and geocoding (e.g. Google Maps or equivalent), while keeping a human-readable suburb/address field
-- Next build priority: quotation line items/PDFs, test-data cleanup controls, customer history across multiple requests and payment links
+- Next build priority: Yoco payment links/status, dedicated generated PDF files, test-data cleanup controls and customer history across multiple requests
 
 ## Operating principle
 
