@@ -204,7 +204,7 @@ export default async function RequestDetailPage({
       .order("created_at", { ascending: false }),
     supabase
       .from("quotations")
-      .select("id, subtotal, fees, total, currency, status, valid_until, created_at")
+      .select("id, quotation_number, subtotal, fees, total, currency, status, approval_status, valid_until, created_at")
       .eq("service_request_id", id)
       .order("created_at", { ascending: false }),
   ]);
@@ -350,14 +350,23 @@ export default async function RequestDetailPage({
                   (quotations ?? []).map((quote) => (
                     <article key={quote.id} className="quote-item">
                       <div className="quote-row">
-                        <strong>
-                          {new Intl.NumberFormat("en-ZA", {
-                            style: "currency",
-                            currency: quote.currency ?? "ZAR",
-                          }).format(Number(quote.total ?? 0))}
-                        </strong>
+                        <Link href={`/ops/quotations/${quote.id}`} className="table-link">
+                          <strong>
+                            {new Intl.NumberFormat("en-ZA", {
+                              style: "currency",
+                              currency: quote.currency ?? "ZAR",
+                            }).format(Number(quote.total ?? 0))}
+                          </strong>
+                        </Link>
                         <span className="status">{String(quote.status).replaceAll("_", " ")}</span>
                       </div>
+                      <p>
+                        <Link href={`/ops/quotations/${quote.id}`} className="table-link">
+                          {quote.quotation_number ?? "View quotation"}
+                        </Link>
+                        {" · "}
+                        Approval: {String(quote.approval_status ?? "not_requested").replaceAll("_", " ")}
+                      </p>
                       <p>
                         Subtotal R{Number(quote.subtotal ?? 0).toFixed(2)} · Fees R{Number(quote.fees ?? 0).toFixed(2)}
                       </p>
