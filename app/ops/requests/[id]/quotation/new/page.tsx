@@ -10,7 +10,7 @@ function fail(id: string, message: string): never {
   redirect(`/ops/requests/${id}/quotation/new?error=${encodeURIComponent(message)}`);
 }
 
-function parseMoney(value: FormDataEntryValue | null) {
+function numberValue(value: FormDataEntryValue | null) {
   const parsed = Number(String(value ?? "").trim());
   return Number.isFinite(parsed) ? parsed : NaN;
 }
@@ -18,91 +18,64 @@ function parseMoney(value: FormDataEntryValue | null) {
 async function createQuotation(id: string, formData: FormData) {
   "use server";
 
-  const subtotal = parseMoney(formData.get("subtotal"));
-  const fees = parseMoney(formData.get("fees"));
-  const status = String(formData.get("status") ?? "draft");
-  const validUntil = String(formData.get("valid_until") ?? "").trim();
+  const descriptions = formData.getAll("item_description").map((v) => String(v).trim());
+  const quantities = formData.getAll("item_quantity").map((v) => Number(String(v)));
+  const prices = formData.getAll("item_unit_price").map((v) => Number(String(v)));
 
-  if (!Number.isFinite(subtotal) || subtotal < 0) {
-    fail(id, "Enter a valid quotation subtotal.");
+  const items = descriptions
+    .map((description, index) => ({
+      description,
+      quantity: quantities[index],
+      unit_price: prices[index],
+    }))
+    .filter((item) => item.description || Number.isFinite(item.quantity) || Number.isFinite(item.unit_price))
+    .filter((item) => item.description);
+
+  if (items.length === 0) {
+    fail(id, "Add at least one quotation line item.");
   }
 
+  for (const item of items) {
+    if (!item.description) fail(id, "Every quotation item needs a description.");
+    if (!Number.isFinite(item.quantity) || item.quantity <= 0) {
+      fail(id, "Each quotation item needs a quantity greater than zero.");
+    }
+    if (!Number.isFinite(item.unit_price) || item.unit_price < 0) {
+      fail(id, "Each quotation item needs a valid unit price.");
+    }
+  }
+
+  const fees = numberValue(formData.get("fees"));
   if (!Number.isFinite(fees) || fees < 0) {
     fail(id, "Enter valid additional fees. Use 0 if there are none.");
   }
 
+  const status = String(formData.get("status") ?? "draft");
   if (!["draft", "sent"].includes(status)) {
     fail(id, "Select a valid quotation status.");
   }
 
+  const validUntil = String(formData.get("valid_until") ?? "").trim();
   if (validUntil) {
     const parsed = new Date(validUntil + "T00:00:00");
-    if (Number.isNaN(parsed.getTime())) {
-      fail(id, "Enter a valid quotation expiry date.");
-    }
+    if (Number.isNaN(parsed.getTime())) fail(id, "Enter a valid quotation expiry date.");
   }
 
   const supabase = await createClient();
 
-  const { data: request, error: requestError } = await supabase
-    .from("service_requests")
-    .select("id, status")
-    .eq("id", id)
-    .single();
+  const { data: quotationId, error } = await supabase.rpc("create_quotation_with_items", {
+    p_service_request_id: id,
+    p_items: items,
+    p_fees: fees,
+    p_status: status,
+    p_valid_until: validUntil || null,
+  });
 
-  if (requestError || !request) {
-    fail(id, "Unable to load the service request.");
+  if (error || !quotationId) {
+    fail(id, error?.message || "Unable to create the quotation.");
   }
 
-  const { data: quotation, error: quoteError } = await supabase
-    .from("quotations")
-    .insert({
-      service_request_id: id,
-      currency: "ZAR",
-      subtotal,
-      fees,
-      status,
-      valid_until: validUntil || null,
-    })
-    .select("id")
-    .single();
-
-  if (quoteError || !quotation) {
-    fail(id, quoteError?.message || "Unable to create the quotation.");
-  }
-
-  if (status === "sent") {
-    const { error: requestUpdateError } = await supabase
-      .from("service_requests")
-      .update({
-        status: "quoted",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", id);
-
-    if (requestUpdateError) fail(id, requestUpdateError.message);
-
-    const { data: { user } } = await supabase.auth.getUser();
-
-    const { error: eventError } = await supabase.from("request_events").insert({
-      service_request_id: id,
-      event_type: "quotation_sent",
-      from_status: request.status,
-      to_status: "quoted",
-      detail: {
-        quotation_id: quotation.id,
-        subtotal,
-        fees,
-        total: subtotal + fees,
-        currency: "ZAR",
-      },
-      created_by: user?.id ?? null,
-    });
-
-    if (eventError) fail(id, eventError.message);
-  }
-
-  redirect(`/ops/requests/${id}?quote_created=1`);
+  redirect(`/ops/quotations/${quotationId}`);
 }
 
 export default async function NewQuotationPage({
@@ -125,7 +98,6 @@ export default async function NewQuotationPage({
   if (requestError || !request) notFound();
 
   const customer = Array.isArray(request.customers) ? request.customers[0] : request.customers;
-
   const createAction = createQuotation.bind(null, id);
 
   return (
@@ -135,52 +107,65 @@ export default async function NewQuotationPage({
           <div>
             <p className="eyebrow">COMMERCIAL</p>
             <h1>Create quotation</h1>
-            <p>
-              {customer?.full_name ?? "Customer"} · {request.service_type}
-            </p>
+            <p>{customer?.full_name ?? "Customer"} · {request.service_type}</p>
           </div>
-          <Link href={`/ops/requests/${id}`} className="button-link">
-            Back to request
-          </Link>
+          <Link href={`/ops/requests/${id}`} className="button-link">Back to request</Link>
         </div>
 
         {error && <div className="form-error">{error}</div>}
 
         <form action={createAction} className="request-form">
           <fieldset>
-            <legend>Quotation pricing</legend>
+            <legend>Quotation line items</legend>
             <p className="fieldset-help">
-              This first version captures the quotation totals. Detailed line items and PDF generation
-              will be added in the next commercial iteration.
+              Add the actual products or services being quoted. Leave unused rows blank.
             </p>
 
+            <div className="quote-lines">
+              {[0, 1, 2, 3, 4].map((index) => (
+                <div className="quote-line" key={index}>
+                  <label>
+                    Description
+                    <input
+                      name="item_description"
+                      placeholder={index === 0 ? "e.g. Move-out cleaning" : "Optional item"}
+                    />
+                  </label>
+                  <label>
+                    Qty
+                    <input
+                      name="item_quantity"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      inputMode="decimal"
+                      defaultValue={index === 0 ? "1" : ""}
+                    />
+                  </label>
+                  <label>
+                    Unit price (R)
+                    <input
+                      name="item_unit_price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputMode="decimal"
+                      placeholder="0.00"
+                    />
+                  </label>
+                </div>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Quotation terms</legend>
             <div className="form-grid">
               <label>
-                Service subtotal (R) *
-                <input
-                  name="subtotal"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  inputMode="decimal"
-                  placeholder="e.g. 850.00"
-                  required
-                />
-              </label>
-
-              <label>
                 Additional fees (R) *
-                <input
-                  name="fees"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  inputMode="decimal"
-                  defaultValue="0"
-                  required
-                />
+                <input name="fees" type="number" min="0" step="0.01" defaultValue="0" required />
                 <span className="field-hint">
-                  Use for travel, call-out, coordination or other agreed fees.
+                  Travel, call-out or coordination fees. Use 0 if none apply.
                 </span>
               </label>
 
@@ -193,20 +178,18 @@ export default async function NewQuotationPage({
                 Quotation status *
                 <select name="status" defaultValue="draft" required>
                   <option value="draft">Draft — internal only</option>
-                  <option value="sent">Sent — mark request as quoted</option>
+                  <option value="sent">Sent — awaiting customer response</option>
                 </select>
               </label>
             </div>
           </fieldset>
 
           <div className="quote-total-note">
-            <strong>Total calculation:</strong> subtotal + additional fees. Currency is ZAR.
+            <strong>Total calculation:</strong> line-item subtotal + additional fees. Currency is ZAR.
           </div>
 
           <div className="form-actions">
-            <Link href={`/ops/requests/${id}`} className="button-link secondary-action">
-              Cancel
-            </Link>
+            <Link href={`/ops/requests/${id}`} className="button-link secondary-action">Cancel</Link>
             <button type="submit">Create quotation</button>
           </div>
         </form>
