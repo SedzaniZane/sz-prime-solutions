@@ -121,6 +121,21 @@ begin
     updated_at = now()
   returning id into v_job_id;
 
+  if p_fulfilment_type = 'partner' and p_partner_id is not null then
+    insert into partner_assignments (
+      service_request_id,
+      partner_id,
+      assignment_status
+    )
+    values (
+      p_service_request_id,
+      p_partner_id,
+      'assigned'
+    )
+    on conflict (service_request_id, partner_id)
+    do update set assignment_status = 'assigned';
+  end if;
+
   update service_requests
   set status = 'scheduled',
       updated_at = now()
