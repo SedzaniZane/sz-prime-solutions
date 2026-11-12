@@ -192,7 +192,7 @@ export default async function RequestDetailPage({
   const customer = Array.isArray(request.customers) ? request.customers[0] : request.customers;
   if (!customer) notFound();
 
-  const [{ data: notes }, { data: events }, { data: quotations }] = await Promise.all([
+  const [{ data: notes }, { data: events }, { data: quotations }, { data: job }] = await Promise.all([
     supabase
       .from("customer_notes")
       .select("id, note, created_by, created_at")
@@ -208,6 +208,11 @@ export default async function RequestDetailPage({
       .select("id, quotation_number, subtotal, fees, total, currency, status, approval_status, valid_until, created_at")
       .eq("service_request_id", id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("jobs")
+      .select("id, status, scheduled_start, scheduled_end, fulfilment_type")
+      .eq("service_request_id", id)
+      .maybeSingle(),
   ]);
 
   const addNoteAction = addNote.bind(null, id, customer.id);
@@ -332,6 +337,39 @@ export default async function RequestDetailPage({
               </dl>
             </section>
 
+
+
+            <section className="detail-card">
+              <div className="detail-card-heading">
+                <div>
+                  <p className="eyebrow">FULFILMENT</p>
+                  <h3>Job scheduling</h3>
+                </div>
+                {job ? (
+                  <Link href={`/ops/jobs/${job.id}`} className="mini-action">Manage job</Link>
+                ) : request.status === "paid" ? (
+                  <Link href={`/ops/requests/${id}/schedule`} className="mini-action">Schedule job</Link>
+                ) : null}
+              </div>
+
+              {job ? (
+                <div className="timeline-list">
+                  <article>
+                    <strong>{String(job.status).replaceAll("_", " ")}</strong>
+                    <p>{new Date(job.scheduled_start).toLocaleString("en-ZA")}</p>
+                    <small>
+                      {job.fulfilment_type === "partner" ? "Plug-Connect partner" : "Internal SZ Prime team"}
+                    </small>
+                  </article>
+                </div>
+              ) : (
+                <p className="empty-copy">
+                  {request.status === "paid"
+                    ? "Payment is confirmed. This request is ready to schedule."
+                    : "Scheduling becomes available after the request reaches Paid status."}
+                </p>
+              )}
+            </section>
 
             <section className="detail-card">
               <div className="detail-card-heading">
