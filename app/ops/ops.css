@@ -1082,3 +1082,22 @@ body {
     padding: 18mm 14mm;
   }
 }
+
+
+.billing-shield {
+  display: block;
+  margin-bottom: 8px;
+  object-fit: contain;
+}
+
+.quote-toolbar-status {
+  display: inline-block;
+  margin-inline-start: 10px;
+  color: #365761;
+  font-size: .85rem;
+  font-weight: 700;
+}
+
+.invoice-payment-summary {
+  border-top: 2px solid #0f4c5c;
+}

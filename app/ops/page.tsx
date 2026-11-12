@@ -2,15 +2,8 @@ import Link from "next/link";
 import "./ops.css";
 import { createClient } from "@/utils/supabase/server";
 
-const unitLabels: Record<string, string> = {
-  pristine_cleaning: "SZ Pristine Cleaning",
-  prime_living: "SZ Prime Living Accommodations",
-  prime_relocations: "SZ Prime Relocations",
-  prime_plug_connect: "SZ Prime Plug-Connect",
-  prime_facilities: "SZ Prime Facilities",
-  prime_business_solutions: "SZ Prime Business Solutions",
-  prime_tech_hub: "SZ Prime Tech Hub",
-};
+import Image from "next/image";
+import { unitLabels } from "@/lib/business-unit-labels";
 
 const unitCategories: Record<string, string> = {
   pristine_cleaning: "Cleaning",
@@ -97,6 +90,7 @@ export default async function OperationsPage() {
     <main className="ops-shell">
       <aside className="sidebar">
         <div>
+          <Image src="/brand/sz-shield.webp" width={48} height={52} className="billing-shield" alt="" />
           <p className="brand-kicker">SZ PRIME SOLUTIONS</p>
           <h1>Operations</h1>
         </div>
@@ -108,6 +102,7 @@ export default async function OperationsPage() {
           <a href="#units">Business units</a>
           <a href="#partners">Partners</a>
           <a href="#quotes">Quotations</a>
+          <Link href="/ops/invoices">Invoices</Link>
           <a href="#payments">Payments</a>
         </nav>
 

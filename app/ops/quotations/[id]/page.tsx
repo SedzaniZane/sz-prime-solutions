@@ -1,4 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
+import { unitLabels } from "@/lib/business-unit-labels";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createYocoCheckout } from "@/lib/yoco";
@@ -75,6 +77,21 @@ async function updateApproval(id: string, formData: FormData) {
   redirect(`/ops/quotations/${id}?saved=1`);
 }
 
+
+async function issueInvoice(id: string) {
+  "use server";
+
+  const key = process.env.YOCO_SECRET_KEY;
+  const mode = key?.startsWith("sk_test_") ? "test" : key?.startsWith("sk_live_") ? "live" : null;
+  if (!mode) fail(id, "Unable to determine the billing environment.");
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("issue_invoice", {
+    p_quotation_id: id,
+    p_mode: mode,
+  });
+  if (error || !data) fail(id, error?.message ?? "Unable to issue the invoice.");
+  redirect(`/ops/invoices/${data}`);
+}
 
 async function createCheckout(id: string) {
   "use server";
@@ -164,6 +181,7 @@ export default async function QuotationPage({
     .select(`
       id,
       quotation_number,
+      issuing_unit,
       service_request_id,
       currency,
       subtotal,
@@ -235,6 +253,14 @@ export default async function QuotationPage({
   };
   const paidMethod = paidPayment?.payment_method;
   const paidMethodLabel = paidMethod && paymentMethods[paidMethod];
+  const { data: invoice } = await supabase.from("invoices").select("id, invoice_number")
+    .eq("quotation_id", id).maybeSingle();
+  const formatDate = (value: string) =>
+    new Intl.DateTimeFormat("en-ZA", { dateStyle: "medium", timeZone: "Africa/Johannesburg" })
+      .format(new Date(value));
+  const quoteStatus = paidPayment ? "Paid" : quote.approval_status === "accepted" ? "Awaiting payment"
+    : quote.approval_status === "declined" ? "Declined"
+    : quote.status === "sent" || quote.approval_status === "pending" ? "Awaiting approval" : "Draft";
   const money = (value: number | string | null) =>
     new Intl.NumberFormat("en-ZA", {
       style: "currency",
@@ -247,12 +273,20 @@ export default async function QuotationPage({
         <div>
           <p className="eyebrow">QUOTATION</p>
           <strong>{quote.quotation_number}</strong>
+          <span className="quote-toolbar-status">{quoteStatus}</span>
         </div>
         <div className="quote-toolbar-actions">
           <Link href={`/ops/requests/${quote.service_request_id}`} className="button-link secondary-action">
             Back to request
           </Link>
-          <SaveQuotationPdf />
+          {invoice ? (
+            <Link href={`/ops/invoices/${invoice.id}`} className="button-link secondary-action">View invoice</Link>
+          ) : quote.approval_status === "accepted" && (
+            <form action={issueInvoice.bind(null, id)}>
+              <button type="submit" className="button-link secondary-action">Issue invoice</button>
+            </form>
+          )}
+          <SaveQuotationPdf reference={quote.quotation_number} />
         </div>
       </section>
 
@@ -291,14 +325,15 @@ export default async function QuotationPage({
       <article className="quote-document">
         <header className="quote-brand-header">
           <div>
+            <Image src="/brand/sz-shield.webp" width={48} height={52} className="billing-shield" alt="" />
             <p className="eyebrow">SZ PRIME SOLUTIONS (PTY) LTD</p>
             <h1>Quotation</h1>
-            <p className="quote-tagline">Structured. Reliable. Prime.</p>
+            <p className="quote-tagline">{unitLabels[quote.issuing_unit ?? request.unit] ?? request.unit}</p>
           </div>
           <div className="quote-meta">
             <div><span>Quote no.</span><strong>{quote.quotation_number}</strong></div>
-            <div><span>Date</span><strong>{new Date(quote.created_at).toLocaleDateString("en-ZA")}</strong></div>
-            <div><span>Valid until</span><strong>{quote.valid_until ?? "Not specified"}</strong></div>
+            <div><span>Date</span><strong>{formatDate(quote.created_at)}</strong></div>
+            <div><span>Valid until</span><strong>{quote.valid_until ? formatDate(quote.valid_until) : "Not specified"}</strong></div>
           </div>
         </header>
 

@@ -83,3 +83,9 @@ Build internal SZ Prime systems first, validate them operationally, then package
 - The quotation page shows a prominent payment confirmation based on the stored payment status, including the payment method where recorded and the paid timestamp in SAST. Test payments carry a sandbox label.
 - Quotation PDF export opens the browser print dialog. The quotation remains the printable document.
 - Future invoicing requirement: support South Africa’s 15% standard VAT on applicable supplies once SZ Prime Solutions’ VAT registration is confirmed. Show the supplier VAT number, net amount, VAT amount and gross total on tax invoices. Use the same stored amounts for the customer document and checkout. Reference: https://www.sars.gov.za/tax-rates/other-taxes/ and https://www.sars.gov.za/businesses-and-employers/government/tax-invoices/
+
+## Billing documents
+
+- New quotations use SZQ-YYYYMM-UNIT-NNNN, allocated by business unit and South African calendar month. The unit codes are PC (Cleaning), LA (Living Accommodations), RE (Relocations), PL (Plug-Connect), FA (Facilities), BS (Business Solutions) and TH (Tech Hub).
+- An accepted quotation can issue one invoice. It snapshots the customer details, line items and totals, and displays matching settled payments separately. Sandbox invoices are visibly labelled. The portal lists invoices and offers browser PDF export using the document reference as the suggested filename.
+- Quotations and invoices show standard totals. Tax handling is deferred pending company registration confirmation.
