@@ -1,48 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { unitLabels } from "@/lib/business-unit-labels";
-import SaveQuotationPdf from "../../quotations/[id]/save-quotation-pdf";
+import BillingPdfLink from "../../billing-pdf-link";
+import { loadInvoice } from "@/lib/billing-documents";
 import "../../ops.css";
-
-type InvoiceItem = {
-  description: string;
-  quantity: number;
-  unit_price: number;
-  line_total: number;
-};
 
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: invoice, error } = await supabase.from("invoices").select("*").eq("id", id).single();
-  if (error || !invoice) notFound();
-
-  const { data: payments, error: paymentError } = await supabase.from("payments")
-    .select("amount, paid_at, payment_method")
-    .eq("quotation_id", invoice.quotation_id)
-    .eq("currency", invoice.currency)
-    .eq("status", "paid")
-    .eq("metadata->>processing_mode", invoice.mode)
-    .order("paid_at", { ascending: false });
-  if (paymentError) throw new Error("Unable to verify invoice settlement.");
-
-  const paidCents = (payments ?? []).reduce((sum, payment) =>
-    sum + Math.round(Number(payment.amount) * 100), 0);
-  const balanceCents = Math.max(Math.round(Number(invoice.total) * 100) - paidCents, 0);
-  const payment = payments?.[0];
-  const method = payment?.payment_method;
-  const methodLabel = method === "apple_pay" ? "Apple Pay" : method === "google_pay" ? "Google Pay" : method === "card" ? "Card" : null;
-  const date = new Intl.DateTimeFormat("en-ZA", {
-    dateStyle: "medium", timeZone: "Africa/Johannesburg",
-  });
-  const dateTime = new Intl.DateTimeFormat("en-ZA", {
-    dateStyle: "medium", timeStyle: "medium", timeZone: "Africa/Johannesburg", hour12: false,
-  });
-  const money = new Intl.NumberFormat("en-ZA", { style: "currency", currency: invoice.currency });
-  const formatMoney = (value: number | string) => money.format(Number(value));
-  const items = invoice.items as InvoiceItem[];
+  const { invoice, paidCents, balanceCents, payment, methodLabel, date, dateTime, formatMoney, items } =
+    await loadInvoice(supabase, id);
 
   return (
     <main className="quote-document-page">
@@ -50,7 +18,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         <strong>{invoice.invoice_number}</strong>
         <div className="quote-toolbar-actions">
           <Link href={`/ops/quotations/${invoice.quotation_id}`} className="button-link secondary-action">Back to quotation</Link>
-          <SaveQuotationPdf reference={invoice.invoice_number} />
+          <BillingPdfLink href={`/ops/invoices/${id}/pdf`} />
         </div>
       </section>
 

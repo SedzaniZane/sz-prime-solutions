@@ -1,11 +1,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { unitLabels } from "@/lib/business-unit-labels";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createYocoCheckout } from "@/lib/yoco";
 import { headers } from "next/headers";
-import SaveQuotationPdf from "./save-quotation-pdf";
+import BillingPdfLink from "../../billing-pdf-link";
+import { loadQuotation } from "@/lib/billing-documents";
 import "../../ops.css";
 
 type Params = Promise<{ id: string }>;
@@ -176,58 +177,7 @@ export default async function QuotationPage({
   const { saved, error, payment_return } = await searchParams;
   const supabase = await createClient();
 
-  const { data: quote, error: quoteError } = await supabase
-    .from("quotations")
-    .select(`
-      id,
-      quotation_number,
-      issuing_unit,
-      service_request_id,
-      currency,
-      subtotal,
-      fees,
-      total,
-      status,
-      approval_status,
-      approved_at,
-      declined_at,
-      valid_until,
-      created_at,
-      service_requests(
-        id,
-        service_type,
-        unit,
-        description,
-        customers(
-          full_name,
-          phone,
-          email,
-          location_text
-        )
-      )
-    `)
-    .eq("id", id)
-    .single();
-
-  if (quoteError || !quote) notFound();
-
-  const request = Array.isArray(quote.service_requests)
-    ? quote.service_requests[0]
-    : quote.service_requests;
-
-  if (!request) notFound();
-
-  const customer = Array.isArray(request.customers)
-    ? request.customers[0]
-    : request.customers;
-
-  const { data: items, error: itemsError } = await supabase
-    .from("quotation_items")
-    .select("id, description, quantity, unit_price, line_total, sort_order")
-    .eq("quotation_id", id)
-    .order("sort_order", { ascending: true });
-
-  if (itemsError) notFound();
+  const { quote, request, customer, items } = await loadQuotation(supabase, id);
 
   const approvalAction = updateApproval.bind(null, id);
   const checkoutAction = createCheckout.bind(null, id);
@@ -286,7 +236,7 @@ export default async function QuotationPage({
               <button type="submit" className="button-link secondary-action">Issue invoice</button>
             </form>
           )}
-          <SaveQuotationPdf reference={quote.quotation_number} />
+          <BillingPdfLink href={`/ops/quotations/${id}/pdf`} />
         </div>
       </section>
 

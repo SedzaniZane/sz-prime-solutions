@@ -795,6 +795,7 @@ body {
 }
 
 .quote-pdf-button {
+  text-decoration: none;
   background: #fff5f5;
   color: #8e1b2c;
   border-color: #f4ccd2;
