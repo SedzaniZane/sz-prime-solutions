@@ -775,9 +775,102 @@ body {
   flex-wrap: wrap;
 }
 
-.print-hint {
-  color: #687681;
-  font-size: .86rem;
+.quote-pdf-button,
+.quote-yoco-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.quote-pdf-button {
+  background: #fff5f5;
+  color: #8e1b2c;
+  border-color: #f4ccd2;
+}
+
+.quote-pdf-button:hover {
+  background: #fce8eb;
+}
+
+.quote-pdf-icon {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  height: 30px;
+  padding-inline: 3px;
+  border-radius: 5px;
+  background: #a82135;
+  color: white;
+  font-size: .63rem;
+  letter-spacing: .03em;
+}
+
+.quote-yoco-button {
+  background: #14212b;
+  color: white;
+  min-height: 48px;
+}
+
+.quote-yoco-button:hover {
+  background: #263c4a;
+}
+
+.quote-yoco-button span:first-child {
+  color: #a9eaff;
+  font-size: 1.15em;
+  font-weight: 850;
+}
+
+.quote-payment-confirmation,
+.quote-payment-notice {
+  width: min(980px, 100%);
+  margin: 0 auto 18px;
+  border: 1px solid #a8d8c2;
+  border-radius: 18px;
+  padding: 18px;
+  background: #edf9f2;
+  color: #154632;
+}
+
+.quote-payment-confirmation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.quote-payment-confirmation h2 {
+  margin: 0;
+  color: inherit;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.05;
+}
+
+.quote-payment-confirmation p {
+  margin: 4px 0;
+}
+
+.quote-payment-check {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #156249;
+  color: white;
+  font-size: 1.25rem;
+}
+
+.quote-paid-amount {
+  margin-inline-start: auto;
+  font-size: clamp(1.25rem, 4vw, 1.75rem);
+  white-space: nowrap;
 }
 
 .quote-document {

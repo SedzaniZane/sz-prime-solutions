@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createYocoCheckout } from "@/lib/yoco";
 import { headers } from "next/headers";
+import SaveQuotationPdf from "./save-quotation-pdf";
 import "../../ops.css";
 
 type Params = Promise<{ id: string }>;
@@ -215,9 +216,25 @@ export default async function QuotationPage({
 
   const { data: payments } = await supabase
     .from("payments")
-    .select("id, provider, provider_reference, amount, currency, status, checkout_status, checkout_url, paid_at, created_at")
+    .select("provider, amount, status, paid_at, payment_method, metadata")
     .eq("quotation_id", id)
     .order("created_at", { ascending: false });
+  const paidPayment = payments?.find((payment) => payment.status === "paid");
+  const isSandboxPayment = paidPayment?.metadata?.processing_mode === "test";
+  const paidAt = paidPayment?.paid_at;
+  const paidTime = paidAt && new Intl.DateTimeFormat("en-ZA", {
+    dateStyle: "medium",
+    timeStyle: "medium",
+    timeZone: "Africa/Johannesburg",
+    hour12: false,
+  }).format(new Date(paidAt));
+  const paymentMethods: Record<string, string> = {
+    apple_pay: "Apple Pay",
+    google_pay: "Google Pay",
+    card: "Card",
+  };
+  const paidMethod = paidPayment?.payment_method;
+  const paidMethodLabel = paidMethod && paymentMethods[paidMethod];
   const money = (value: number | string | null) =>
     new Intl.NumberFormat("en-ZA", {
       style: "currency",
@@ -235,22 +252,40 @@ export default async function QuotationPage({
           <Link href={`/ops/requests/${quote.service_request_id}`} className="button-link secondary-action">
             Back to request
           </Link>
-          <span className="print-hint">Use browser Print → Save as PDF</span>
+          <SaveQuotationPdf />
         </div>
       </section>
 
       {error && <div className="form-error no-print">{error}</div>}
       {saved && <div className="form-success no-print">Customer approval status updated.</div>}
-      {payment_return === "success" && (
-        <div className="form-success no-print">
-          Payment page completed. Final payment confirmation is verified by Yoco webhook.
-        </div>
-      )}
-      {payment_return === "cancelled" && (
-        <div className="form-error no-print">Payment was cancelled before completion.</div>
-      )}
-      {payment_return === "failed" && (
-        <div className="form-error no-print">Payment did not complete successfully.</div>
+      {paidPayment ? (
+        <section className="quote-payment-confirmation no-print" aria-label="Payment confirmation">
+          <span className="quote-payment-check" aria-hidden="true">✓</span>
+          <div>
+            <p className="eyebrow">{isSandboxPayment ? "YOCO SANDBOX PAYMENT" : "PAYMENT CONFIRMED"}</p>
+            <h2>Paid</h2>
+            <p>
+              {paidMethodLabel && <strong>{paidMethodLabel}</strong>}
+              {paidMethodLabel && paidTime && " · "}
+              {paidTime && <time dateTime={paidAt}>{paidTime} SAST</time>}
+            </p>
+          </div>
+          <strong className="quote-paid-amount">{money(paidPayment.amount)}</strong>
+        </section>
+      ) : (
+        <>
+          {payment_return === "success" && (
+            <div className="quote-payment-notice no-print" role="status">
+              Waiting for Yoco to confirm payment. Refresh this page to check again.
+            </div>
+          )}
+          {payment_return === "cancelled" && (
+            <div className="form-error no-print">Payment was cancelled before completion.</div>
+          )}
+          {payment_return === "failed" && (
+            <div className="form-error no-print">Payment did not complete successfully.</div>
+          )}
+        </>
       )}
 
       <article className="quote-document">
@@ -320,7 +355,7 @@ export default async function QuotationPage({
       </article>
 
 
-      <section className="approval-panel no-print">
+      {!paidPayment && <section className="approval-panel no-print">
         <div>
           <p className="eyebrow">PAYMENT</p>
           <h2>Payment request</h2>
@@ -332,17 +367,18 @@ export default async function QuotationPage({
           {(payments ?? []).length > 0 && (
             <p>
               Latest status: <strong>{String(payments?.[0]?.status ?? "pending").replaceAll("_", " ")}</strong>
-              {payments?.[0]?.paid_at ? ` · Paid ${new Date(payments[0].paid_at).toLocaleString("en-ZA")}` : ""}
             </p>
           )}
         </div>
 
-        {quote.approval_status === "accepted" && payments?.[0]?.status !== "paid" && (
+        {quote.approval_status === "accepted" && (
           <form action={checkoutAction}>
-            <button type="submit">Pay with Yoco</button>
+            <button type="submit" className="quote-yoco-button">
+              Pay with <span>Yoco</span> <span aria-hidden="true">↗</span>
+            </button>
           </form>
         )}
-      </section>
+      </section>}
 
 
       <section className="approval-panel no-print">

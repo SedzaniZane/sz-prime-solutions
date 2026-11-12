@@ -76,3 +76,10 @@ One company, one customer relationship, multiple specialised solutions.
 ## Product development principle
 
 Build internal SZ Prime systems first, validate them operationally, then package proven capabilities through SZ Prime Tech Hub for external clients.
+
+## Yoco sandbox verification and billing follow-up
+
+- On 12 November 2026, the R5.00 test checkout for quotation `SZQ-E28BCDE0` succeeded through Apple Pay. Supabase records payment and service request status as paid, with a `payment_succeeded` event at 21:00:46 SAST (19:00:46 UTC).
+- The quotation page shows a prominent payment confirmation based on the stored payment status, including the payment method where recorded and the paid timestamp in SAST. Test payments carry a sandbox label.
+- Quotation PDF export opens the browser print dialog. The quotation remains the printable document.
+- Future invoicing requirement: support South Africa’s 15% standard VAT on applicable supplies once SZ Prime Solutions’ VAT registration is confirmed. Show the supplier VAT number, net amount, VAT amount and gross total on tax invoices. Use the same stored amounts for the customer document and checkout. Reference: https://www.sars.gov.za/tax-rates/other-taxes/ and https://www.sars.gov.za/businesses-and-employers/government/tax-invoices/
