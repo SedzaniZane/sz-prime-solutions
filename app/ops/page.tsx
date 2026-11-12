@@ -104,6 +104,7 @@ export default async function OperationsPage() {
         <nav>
           <a className="active" href="#overview">Overview</a>
           <a href="#requests">Service requests</a>
+          <Link href="/ops/jobs">Jobs</Link>
           <a href="#units">Business units</a>
           <a href="#partners">Partners</a>
           <a href="#quotes">Quotations</a>
@@ -213,9 +214,9 @@ export default async function OperationsPage() {
           <div className="next-grid">
             <div><strong>01</strong><span>Staff authentication and RLS</span></div>
             <div><strong>02</strong><span>Live customers and requests</span></div>
-            <div><strong>03</strong><span>Next: create/edit workflows</span></div>
+            <div><strong>03</strong><span>Live request, quotation and job workflows</span></div>
             <div><strong>04</strong><span>Next: WhatsApp lead ingestion</span></div>
-            <div><strong>05</strong><span>Next: Yoco payment states</span></div>
+            <div><strong>05</strong><span>Yoco payment verification foundation</span></div>
             <div><strong>06</strong><span>Next: revenue and cross-sell reporting</span></div>
           </div>
         </section>
