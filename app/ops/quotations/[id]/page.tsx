@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { createYocoCheckout } from "@/lib/yoco";
+import { headers } from "next/headers";
 import "../../ops.css";
 
 type Params = Promise<{ id: string }>;
-type SearchParams = Promise<{ saved?: string; error?: string }>;
+type SearchParams = Promise<{ saved?: string; error?: string; payment_return?: string }>;
 
 function fail(id: string, message: string): never {
   redirect(`/ops/quotations/${id}?error=${encodeURIComponent(message)}`);
@@ -72,6 +74,79 @@ async function updateApproval(id: string, formData: FormData) {
   redirect(`/ops/quotations/${id}?saved=1`);
 }
 
+
+async function createCheckout(id: string) {
+  "use server";
+
+  const supabase = await createClient();
+
+  const { data: quote, error: quoteError } = await supabase
+    .from("quotations")
+    .select("id, quotation_number, service_request_id, total, currency, approval_status")
+    .eq("id", id)
+    .single();
+
+  if (quoteError || !quote) fail(id, "Unable to load this quotation.");
+  if (quote.approval_status !== "accepted") {
+    fail(id, "The quotation must be accepted before requesting payment.");
+  }
+
+  const { data: existing } = await supabase
+    .from("payments")
+    .select("id, checkout_url, status")
+    .eq("quotation_id", id)
+    .eq("provider", "yoco")
+    .in("status", ["pending", "paid"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing?.status === "paid") {
+    fail(id, "This quotation has already been paid.");
+  }
+
+  if (existing?.checkout_url) {
+    redirect(existing.checkout_url);
+  }
+
+  const headerStore = await headers();
+  const host = headerStore.get("x-forwarded-host") || headerStore.get("host");
+  const proto = headerStore.get("x-forwarded-proto") || "https";
+  if (!host) fail(id, "Unable to determine the application URL.");
+
+  const origin = `${proto}://${host}`;
+  const amountCents = Math.round(Number(quote.total) * 100);
+
+  const checkout = await createYocoCheckout({
+    amountCents,
+    quotationId: quote.id,
+    quotationNumber: quote.quotation_number,
+    serviceRequestId: quote.service_request_id,
+    successUrl: `${origin}/ops/quotations/${id}?payment_return=success`,
+    cancelUrl: `${origin}/ops/quotations/${id}?payment_return=cancelled`,
+    failureUrl: `${origin}/ops/quotations/${id}?payment_return=failed`,
+  });
+
+  const { error: paymentError } = await supabase.rpc("create_pending_payment", {
+    p_service_request_id: quote.service_request_id,
+    p_quotation_id: quote.id,
+    p_provider: "yoco",
+    p_provider_reference: checkout.id,
+    p_checkout_url: checkout.redirectUrl,
+    p_amount: Number(quote.total),
+    p_currency: quote.currency ?? "ZAR",
+    p_checkout_status: checkout.status,
+    p_metadata: {
+      quotation_number: quote.quotation_number,
+      processing_mode: checkout.processingMode ?? null,
+    },
+  });
+
+  if (paymentError) fail(id, paymentError.message);
+
+  redirect(checkout.redirectUrl);
+}
+
 export default async function QuotationPage({
   params,
   searchParams,
@@ -80,7 +155,7 @@ export default async function QuotationPage({
   searchParams: SearchParams;
 }) {
   const { id } = await params;
-  const { saved, error } = await searchParams;
+  const { saved, error, payment_return } = await searchParams;
   const supabase = await createClient();
 
   const { data: quote, error: quoteError } = await supabase
@@ -136,6 +211,13 @@ export default async function QuotationPage({
   if (itemsError) notFound();
 
   const approvalAction = updateApproval.bind(null, id);
+  const checkoutAction = createCheckout.bind(null, id);
+
+  const { data: payments } = await supabase
+    .from("payments")
+    .select("id, provider, provider_reference, amount, currency, status, checkout_status, checkout_url, paid_at, created_at")
+    .eq("quotation_id", id)
+    .order("created_at", { ascending: false });
   const money = (value: number | string | null) =>
     new Intl.NumberFormat("en-ZA", {
       style: "currency",
@@ -159,6 +241,17 @@ export default async function QuotationPage({
 
       {error && <div className="form-error no-print">{error}</div>}
       {saved && <div className="form-success no-print">Customer approval status updated.</div>}
+      {payment_return === "success" && (
+        <div className="form-success no-print">
+          Payment page completed. Final payment confirmation is verified by Yoco webhook.
+        </div>
+      )}
+      {payment_return === "cancelled" && (
+        <div className="form-error no-print">Payment was cancelled before completion.</div>
+      )}
+      {payment_return === "failed" && (
+        <div className="form-error no-print">Payment did not complete successfully.</div>
+      )}
 
       <article className="quote-document">
         <header className="quote-brand-header">
@@ -225,6 +318,32 @@ export default async function QuotationPage({
           </p>
         </footer>
       </article>
+
+
+      <section className="approval-panel no-print">
+        <div>
+          <p className="eyebrow">PAYMENT</p>
+          <h2>Payment request</h2>
+          <p>
+            {quote.approval_status === "accepted"
+              ? "Create or reopen a secure Yoco checkout for this accepted quotation."
+              : "Customer acceptance is required before requesting payment."}
+          </p>
+          {(payments ?? []).length > 0 && (
+            <p>
+              Latest status: <strong>{String(payments?.[0]?.status ?? "pending").replaceAll("_", " ")}</strong>
+              {payments?.[0]?.paid_at ? ` · Paid ${new Date(payments[0].paid_at).toLocaleString("en-ZA")}` : ""}
+            </p>
+          )}
+        </div>
+
+        {quote.approval_status === "accepted" && payments?.[0]?.status !== "paid" && (
+          <form action={checkoutAction}>
+            <button type="submit">Pay with Yoco</button>
+          </form>
+        )}
+      </section>
+
 
       <section className="approval-panel no-print">
         <div>

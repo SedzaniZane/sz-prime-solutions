@@ -58,7 +58,12 @@ Legacy ZaNdou names are retired from the active architecture and should only app
 - Customer approval is tracked as pending, accepted or declined; accepted quotations advance the request to awaiting_payment
 - Sent quotations move requests into the quoted stage and create audit events
 - Planned location enhancement: customer/service addresses should later support map pin capture and geocoding (e.g. Google Maps or equivalent), while keeping a human-readable suburb/address field
-- Next build priority: Yoco payment links/status, dedicated generated PDF files, test-data cleanup controls and customer history across multiple requests
+- Yoco payment foundation implemented: accepted quotations can create server-side hosted Checkout API sessions; pending payments are stored against quotations and requests
+- Yoco webhook verification uses timestamp replay protection plus HMAC-SHA256 signature validation before CRM payment updates
+- Successful verified payments move requests to a distinct paid stage; scheduling remains a separate operational action
+- Required private deployment secrets: YOCO_SECRET_KEY, YOCO_WEBHOOK_SECRET and SUPABASE_SERVICE_ROLE_KEY
+- Manual Yoco Payment Links remain a fallback option until Checkout API live credentials/domain verification are complete
+- Next build priority: scheduling workflow, payment dashboard/detail view, dedicated generated PDF files, test-data cleanup controls and cross-request customer history
 
 ## Operating principle
 
