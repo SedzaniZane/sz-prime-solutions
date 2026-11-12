@@ -115,6 +115,31 @@ create table partner_assignments (
 );
 
 
+create table jobs (
+  id uuid primary key default gen_random_uuid(),
+  service_request_id uuid not null unique references service_requests(id) on delete cascade,
+  fulfilment_type text not null default 'internal'
+    check (fulfilment_type in ('internal', 'partner')),
+  assigned_staff_user_id uuid,
+  partner_id uuid references partners(id) on delete set null,
+  scheduled_start timestamptz not null,
+  scheduled_end timestamptz,
+  operational_notes text,
+  status text not null default 'scheduled'
+    check (status in ('scheduled', 'in_progress', 'completed', 'cancelled')),
+  started_at timestamptz,
+  completed_at timestamptz,
+  created_by uuid,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (
+    (fulfilment_type = 'internal' and partner_id is null)
+    or
+    (fulfilment_type = 'partner' and partner_id is not null)
+  ),
+  check (scheduled_end is null or scheduled_end > scheduled_start)
+);
+
 create table customer_notes (
   id uuid primary key default gen_random_uuid(),
   customer_id uuid not null references customers(id) on delete cascade,
@@ -141,4 +166,6 @@ create index idx_payments_request on payments(service_request_id);
 create index idx_payments_quotation on payments(quotation_id);
 create unique index idx_payments_provider_reference on payments(provider, provider_reference) where provider_reference is not null;
 create index idx_quotation_items_quote on quotation_items(quotation_id, sort_order);
+create index idx_jobs_schedule on jobs(scheduled_start, status);
+create index idx_jobs_partner on jobs(partner_id) where partner_id is not null;
 create unique index idx_quotations_number on quotations(quotation_number);
