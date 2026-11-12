@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { unitLabels } from "@/lib/business-unit-labels";
 import BillingPdfLink from "../../billing-pdf-link";
+import BillingEnquiries from "../../billing-enquiries";
 import { loadInvoice } from "@/lib/billing-documents";
 import "../../ops.css";
 
@@ -15,7 +16,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   return (
     <main className="quote-document-page">
       <section className="quote-toolbar no-print">
-        <strong>{invoice.invoice_number}</strong>
+        <strong>Invoice No: {invoice.invoice_number}</strong>
         <div className="quote-toolbar-actions">
           <Link href={`/ops/quotations/${invoice.quotation_id}`} className="button-link secondary-action">Back to quotation</Link>
           <BillingPdfLink href={`/ops/invoices/${id}/pdf`} />
@@ -32,7 +33,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             {invoice.mode === "test" && <p className="eyebrow">SANDBOX INVOICE</p>}
           </div>
           <div className="quote-meta">
-            <div><span>Invoice no.</span><strong>{invoice.invoice_number}</strong></div>
+            <div><span>Invoice No:</span><strong>{invoice.invoice_number}</strong></div>
             <div><span>Issued</span><strong>{date.format(new Date(invoice.issued_at))}</strong></div>
             <div><span>Quotation</span><strong>{invoice.quotation_number}</strong></div>
           </div>
@@ -78,6 +79,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             <span> · <time dateTime={payment.paid_at}>{dateTime.format(new Date(payment.paid_at))} SAST</time></span>
           </footer>
         )}
+        <BillingEnquiries />
       </article>
     </main>
   );

@@ -19,7 +19,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     reference: quote.quotation_number,
     unit: unitLabels[quote.issuing_unit ?? request.unit] ?? request.unit,
     metadata: [
-      ["Date", date.format(new Date(quote.created_at))],
+      ["Issue date", date.format(new Date(quote.created_at))],
+      ["Currency", quote.currency ?? "ZAR"],
       ["Valid until", quote.valid_until ? date.format(new Date(quote.valid_until)) : "Not specified"],
     ],
     customer: [customer?.full_name ?? "Customer", customer?.phone, customer?.email, customer?.location_text]

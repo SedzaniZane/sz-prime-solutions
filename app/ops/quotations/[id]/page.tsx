@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createYocoCheckout } from "@/lib/yoco";
 import { headers } from "next/headers";
 import BillingPdfLink from "../../billing-pdf-link";
+import BillingEnquiries from "../../billing-enquiries";
 import { loadQuotation } from "@/lib/billing-documents";
 import "../../ops.css";
 
@@ -222,7 +223,7 @@ export default async function QuotationPage({
       <section className="quote-toolbar no-print">
         <div>
           <p className="eyebrow">QUOTATION</p>
-          <strong>{quote.quotation_number}</strong>
+          <strong>Quotation No: {quote.quotation_number}</strong>
           <span className="quote-toolbar-status">{quoteStatus}</span>
         </div>
         <div className="quote-toolbar-actions">
@@ -281,7 +282,7 @@ export default async function QuotationPage({
             <p className="quote-tagline">{unitLabels[quote.issuing_unit ?? request.unit] ?? request.unit}</p>
           </div>
           <div className="quote-meta">
-            <div><span>Quote no.</span><strong>{quote.quotation_number}</strong></div>
+            <div><span>Quotation No:</span><strong>{quote.quotation_number}</strong></div>
             <div><span>Date</span><strong>{formatDate(quote.created_at)}</strong></div>
             <div><span>Valid until</span><strong>{quote.valid_until ? formatDate(quote.valid_until) : "Not specified"}</strong></div>
           </div>
@@ -337,6 +338,7 @@ export default async function QuotationPage({
             customer approval and any required payment.
           </p>
         </footer>
+        <BillingEnquiries />
       </article>
 
 

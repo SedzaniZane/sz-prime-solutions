@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { billingContact } from "./billing-contact";
 
 type BillingPdf = {
   title: "Quotation" | "Invoice";
@@ -22,6 +23,7 @@ export async function renderBillingPdf(doc: BillingPdf) {
 
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const referenceLabel = doc.title + ' No: ' + doc.reference;
   const supported = new Set(regular.getCharacterSet());
   const logo = await pdf.embedPng(await readFile(join(process.cwd(), "public", "brand", "sz-shield-print.png")));
   const ink = rgb(0.09, 0.17, 0.23);
@@ -77,7 +79,7 @@ export async function renderBillingPdf(doc: BillingPdf) {
     if (y - height >= 50) return;
     page = pdf.addPage([595, 842]);
     y = 790;
-    draw(doc.reference, left, y, 11, true);
+    draw(referenceLabel, left, y, 11, true);
     if (doc.sandbox) draw("SANDBOX INVOICE", right, y, 10, true, true);
     y -= 18;
     line();
@@ -95,13 +97,13 @@ export async function renderBillingPdf(doc: BillingPdf) {
   page.drawImage(logo, { x: left, y: 745, width: 37, height: 40 });
   draw("SZ PRIME SOLUTIONS (PTY) LTD", 94, 778, 10, true);
   draw(doc.title, 94, 751, 24, true);
-  draw(doc.reference, right, 778, 12, true, true);
+  draw(referenceLabel, right, 778, 11, true, true);
   if (doc.sandbox) draw("SANDBOX INVOICE", right, 757, 10, true, true);
   y = 722;
   line();
   y -= 19;
   paragraph(doc.unit);
-  for (const [label, value] of doc.metadata) paragraph(label + "  " + value);
+  for (const [label, value] of doc.metadata) paragraph(label + ": " + value);
 
   y -= 14;
   ensureSpace(32);
@@ -114,23 +116,31 @@ export async function renderBillingPdf(doc: BillingPdf) {
   y -= 17;
   doc.service.forEach(paragraph);
 
+  function tableHeader() {
+    line();
+    y -= 17;
+    draw("Description", left, y, 10, true);
+    draw("Quantity", 360, y, 10, true, true);
+    draw("Unit price", 452, y, 10, true, true);
+    draw("Line total", right, y, 10, true, true);
+    y -= 20;
+  }
+
   y -= 17;
-  ensureSpace(42);
-  line();
-  y -= 17;
-  draw("Description", left, y, 10, true);
-  draw("Qty", 360, y, 10, true, true);
-  draw("Unit price", 452, y, 10, true, true);
-  draw("Total", right, y, 10, true, true);
-  y -= 20;
+  ensureSpace(62);
+  tableHeader();
 
   for (const item of doc.items) {
+    const previousPage = page;
     ensureSpace(25);
+    if (page !== previousPage) tableHeader();
     draw(item.quantity, 360, y, 10, false, true);
     draw(item.unitPrice, 452, y, 10, false, true);
     draw(item.total, right, y, 10, true, true);
     for (const row of wrap(item.description, 275)) {
+      const descriptionPage = page;
       ensureSpace(15);
+      if (page !== descriptionPage) tableHeader();
       draw(row, left, y);
       y -= 15;
     }
@@ -151,6 +161,16 @@ export async function renderBillingPdf(doc: BillingPdf) {
     y -= 12;
     paragraph(doc.note);
   }
+
+  const { email, whatsapp } = billingContact();
+  y -= 15;
+  ensureSpace(whatsapp ? 65 : 50);
+  line();
+  y -= 18;
+  draw("QUERIES AND MORE INFORMATION", left, y, 10, true);
+  y -= 15;
+  paragraph("Email: " + email);
+  if (whatsapp) paragraph("WhatsApp: " + whatsapp);
 
   const pages = pdf.getPages();
   pages.forEach((sheet, index) => sheet.drawText(`${index + 1} / ${pages.length}`, {

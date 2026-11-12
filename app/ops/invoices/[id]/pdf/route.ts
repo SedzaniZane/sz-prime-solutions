@@ -17,11 +17,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     reference: invoice.invoice_number,
     unit: unitLabels[invoice.unit] ?? invoice.unit,
     metadata: [
-      ["Issued", date.format(new Date(invoice.issued_at))],
-      ["Quotation", invoice.quotation_number],
+      ["Issue date", date.format(new Date(invoice.issued_at))],
+      ["Quotation No", invoice.quotation_number],
+      ["Currency", invoice.currency],
     ],
-    customer: [invoice.customer_name, invoice.customer_email, invoice.customer_location]
-      .filter((value): value is string => Boolean(value)),
+    customer: [
+      "Customer name: " + invoice.customer_name,
+      ...(invoice.customer_email ? ["Customer email: " + invoice.customer_email] : []),
+      ...(invoice.customer_location ? ["Customer location: " + invoice.customer_location] : []),
+    ],
     service: [invoice.service_type],
     items: items.map((item) => ({
       description: item.description,
