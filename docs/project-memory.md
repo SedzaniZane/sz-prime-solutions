@@ -61,6 +61,7 @@ Legacy ZaNdou names are retired from the active architecture and should only app
 - Yoco payment foundation implemented: accepted quotations can create server-side hosted Checkout API sessions; pending payments are stored against quotations and requests
 - Yoco webhook verification uses timestamp replay protection plus HMAC-SHA256 signature validation before CRM payment updates
 - Successful verified payments move requests to a distinct paid stage; scheduling remains a separate operational action
+- Yoco test credentials have been obtained from the Yoco Checkout API console; the actual key values must never be stored in GitHub, project documentation or chat memory
 - Required private deployment secrets: YOCO_SECRET_KEY, YOCO_WEBHOOK_SECRET and SUPABASE_SERVICE_ROLE_KEY
 - Manual Yoco Payment Links remain a fallback option until Checkout API live credentials/domain verification are complete
 - Scheduling/job workflow implemented: paid requests can be scheduled with start/end times, internal staff or Plug-Connect partner fulfilment, operational notes and job lifecycle tracking
