@@ -30,15 +30,18 @@ async function updateJob(id: string, formData: FormData) {
 
   const now = new Date().toISOString();
 
+  const jobUpdate: Record<string, string | null> = {
+    status: nextStatus,
+    operational_notes: String(formData.get("operational_notes") ?? "").trim() || null,
+    updated_at: now,
+  };
+
+  if (nextStatus === "in_progress") jobUpdate.started_at = now;
+  if (nextStatus === "completed") jobUpdate.completed_at = now;
+
   const { error: updateError } = await supabase
     .from("jobs")
-    .update({
-      status: nextStatus,
-      operational_notes: String(formData.get("operational_notes") ?? "").trim() || null,
-      started_at: nextStatus === "in_progress" ? now : undefined,
-      completed_at: nextStatus === "completed" ? now : undefined,
-      updated_at: now,
-    })
+    .update(jobUpdate)
     .eq("id", id);
 
   if (updateError) fail(id, updateError.message);
