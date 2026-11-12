@@ -19,6 +19,7 @@ const statuses = [
   ["qualified", "Qualified"],
   ["quoted", "Quoted"],
   ["awaiting_payment", "Awaiting payment"],
+  ["paid", "Paid"],
   ["scheduled", "Scheduled"],
   ["in_progress", "In progress"],
   ["completed", "Completed"],
