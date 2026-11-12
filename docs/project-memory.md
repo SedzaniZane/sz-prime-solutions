@@ -63,7 +63,10 @@ Legacy ZaNdou names are retired from the active architecture and should only app
 - Successful verified payments move requests to a distinct paid stage; scheduling remains a separate operational action
 - Required private deployment secrets: YOCO_SECRET_KEY, YOCO_WEBHOOK_SECRET and SUPABASE_SERVICE_ROLE_KEY
 - Manual Yoco Payment Links remain a fallback option until Checkout API live credentials/domain verification are complete
-- Next build priority: scheduling workflow, payment dashboard/detail view, dedicated generated PDF files, test-data cleanup controls and cross-request customer history
+- Scheduling/job workflow implemented: paid requests can be scheduled with start/end times, internal staff or Plug-Connect partner fulfilment, operational notes and job lifecycle tracking
+- Jobs have a dedicated operations list and job workspace; progress updates synchronise the service-request lifecycle through scheduled, in_progress, completed or cancelled
+- Partner-scheduled jobs also create/update Plug-Connect partner assignment records
+- Next build priority: payment dashboard/detail view, customer feedback after completion, dedicated generated PDF files, test-data cleanup controls and cross-request customer history
 
 ## Operating principle
 
