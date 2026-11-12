@@ -775,6 +775,12 @@ body {
   flex-wrap: wrap;
 }
 
+.quote-document-page > .form-success,
+.quote-document-page > .form-error {
+  width: min(980px, 100%);
+  margin-inline: auto;
+}
+
 .quote-pdf-button,
 .quote-yoco-button {
   display: inline-flex;
@@ -1040,6 +1046,19 @@ body {
 }
 
 @media print {
+  .quote-items-section {
+    overflow: visible;
+  }
+
+  .quote-items-table {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .quote-items-table td:first-child {
+    overflow-wrap: anywhere;
+  }
+
   body {
     background: white !important;
   }
