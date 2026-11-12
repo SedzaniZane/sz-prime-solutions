@@ -15,6 +15,7 @@ create type request_status as enum (
   'qualified',
   'quoted',
   'awaiting_payment',
+  'paid',
   'scheduled',
   'in_progress',
   'completed',
@@ -88,13 +89,19 @@ create table quotation_items (
 create table payments (
   id uuid primary key default gen_random_uuid(),
   service_request_id uuid not null references service_requests(id) on delete cascade,
+  quotation_id uuid references quotations(id) on delete set null,
   provider text not null default 'yoco',
   provider_reference text,
+  checkout_url text,
+  checkout_status text,
+  payment_method text,
   amount numeric(12,2) not null,
   currency text not null default 'ZAR',
   status text not null default 'pending',
+  metadata jsonb not null default '{}'::jsonb,
   paid_at timestamptz,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create table partner_assignments (
@@ -131,5 +138,7 @@ create index idx_service_requests_customer on service_requests(customer_id);
 create index idx_service_requests_unit_status on service_requests(unit, status);
 create index idx_request_events_request on request_events(service_request_id, created_at desc);
 create index idx_payments_request on payments(service_request_id);
+create index idx_payments_quotation on payments(quotation_id);
+create unique index idx_payments_provider_reference on payments(provider, provider_reference) where provider_reference is not null;
 create index idx_quotation_items_quote on quotation_items(quotation_id, sort_order);
 create unique index idx_quotations_number on quotations(quotation_number);
