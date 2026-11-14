@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createYocoCheckout } from "@/lib/yoco";
 import { headers } from "next/headers";
 import BillingPdfLink from "../../billing-pdf-link";
+import ContactIcon from "../../contact-icon";
 import BillingEnquiries from "../../billing-enquiries";
 import { loadQuotation } from "@/lib/billing-documents";
 import "../../ops.css";
@@ -292,7 +293,7 @@ export default async function QuotationPage({
           <div>
             <p className="eyebrow">PREPARED FOR</p>
             <h2>{customer?.full_name ?? "Customer"}</h2>
-            {customer?.phone && <p>{customer.phone}</p>}
+            {customer?.phone && <p><ContactIcon kind="phone" />Contact phone: {customer.phone}</p>}
             {customer?.email && <p>{customer.email}</p>}
             {customer?.location_text && <p>{customer.location_text}</p>}
           </div>

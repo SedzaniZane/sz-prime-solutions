@@ -3,5 +3,5 @@ export function billingContact() {
   const number = process.env.SZ_PRIME_WHATSAPP?.trim().replace(/[\s().-]/g, "").replace(/^\+/, "") || "27716188693";
   const international = /^0\d{9}$/.test(number) ? "27" + number.slice(1) : number;
   const whatsapp = /^[1-9]\d{7,14}$/.test(international) ? "+" + international : null;
-  return { email, whatsapp };
+  return { email, whatsapp, whatsappUrl: whatsapp ? `https://wa.me/${international}` : null };
 }

@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, StandardFonts, PDFString, rgb } from "pdf-lib";
+import QRCode from "qrcode";
+import { phoneIcon, whatsappIcon } from "./contact-icons";
 import { billingContact } from "./billing-contact";
 
 type BillingPdf = {
@@ -162,15 +164,35 @@ export async function renderBillingPdf(doc: BillingPdf) {
     paragraph(doc.note);
   }
 
-  const { email, whatsapp } = billingContact();
+  function linkedText(label: string, url: string, x: number, baseline: number) {
+    const width = regular.widthOfTextAtSize(clean(label), 10);
+    page.drawText(clean(label), { x, y: baseline, size: 10, font: regular, color: rgb(0.05, 0.35, 0.30) });
+    page.drawLine({ start: { x, y: baseline - 2 }, end: { x: x + width, y: baseline - 2 }, thickness: 0.5, color: muted });
+    const annotation = pdf.context.obj({
+      Type: "Annot", Subtype: "Link", Rect: [x, baseline - 3, x + width, baseline + 11],
+      Border: [0, 0, 0], A: { S: "URI", URI: PDFString.of(url) },
+    });
+    page.node.addAnnot(pdf.context.register(annotation));
+  }
+
+  const { email, whatsapp, whatsappUrl } = billingContact();
   y -= 15;
-  ensureSpace(whatsapp ? 65 : 50);
+  ensureSpace(whatsappUrl ? 125 : 50);
   line();
   y -= 18;
   draw("QUERIES AND MORE INFORMATION", left, y, 10, true);
-  y -= 15;
-  paragraph("Email: " + email);
-  if (whatsapp) paragraph("WhatsApp: " + whatsapp);
+  linkedText("Email: " + email, "mailto:" + email, left, y - 17);
+
+  if (whatsapp && whatsappUrl) {
+    page.drawSvgPath(phoneIcon, { x: left, y: y - 24, scale: 0.53, borderWidth: 0.8, borderColor: muted });
+    linkedText("Contact phone: " + whatsapp, "tel:" + whatsapp, left + 17, y - 34);
+    page.drawSvgPath(whatsappIcon, { x: left, y: y - 41, scale: 0.53, borderWidth: 0.8, borderColor: rgb(0.05, 0.42, 0.29) });
+    linkedText("WhatsApp: " + whatsappUrl, whatsappUrl, left + 17, y - 51);
+    const qr = await pdf.embedPng(await QRCode.toBuffer(whatsappUrl, { margin: 4, scale: 6 }));
+    page.drawRectangle({ x: right - 139, y: y - 98, width: 139, height: 110, borderColor: rule, borderWidth: 0.7 });
+    page.drawImage(qr, { x: right - 109, y: y - 73, width: 79, height: 79 });
+    draw("Scan to chat with support", right - 12, y - 88, 10, true, true);
+  }
 
   const pages = pdf.getPages();
   pages.forEach((sheet, index) => sheet.drawText(`${index + 1} / ${pages.length}`, {
