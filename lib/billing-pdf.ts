@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { PDFDocument, StandardFonts, PDFString, rgb } from "pdf-lib";
 import QRCode from "qrcode";
 import { phoneIcon, whatsappIcon } from "./contact-icons";
+import { billingPdfFilename } from "./billing-pdf-filename";
 import { billingContact } from "./billing-contact";
 
 type BillingPdf = {
@@ -204,7 +205,7 @@ export async function renderBillingPdf(doc: BillingPdf) {
 
 export async function billingPdfResponse(doc: BillingPdf) {
   const bytes = await renderBillingPdf(doc);
-  const filename = doc.reference.replace(/[^a-zA-Z0-9_-]/g, "_") + ".pdf";
+  const filename = billingPdfFilename(doc.reference);
   return new Response(Uint8Array.from(bytes).buffer, {
     headers: {
       "Content-Type": "application/pdf",

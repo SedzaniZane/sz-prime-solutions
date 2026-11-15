@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { unitLabels } from "@/lib/business-unit-labels";
+import { billingPdfFilename } from "@/lib/billing-pdf-filename";
 import BillingPdfLink from "../../billing-pdf-link";
 import BillingEnquiries from "../../billing-enquiries";
 import { loadInvoice } from "@/lib/billing-documents";
@@ -19,7 +20,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         <strong>Invoice No: {invoice.invoice_number}</strong>
         <div className="quote-toolbar-actions">
           <Link href={`/ops/quotations/${invoice.quotation_id}`} className="button-link secondary-action">Back to quotation</Link>
-          <BillingPdfLink href={`/ops/invoices/${id}/pdf`} />
+          <BillingPdfLink href={`/ops/invoices/${id}/pdf/${billingPdfFilename(invoice.invoice_number)}`} />
         </div>
       </section>
 

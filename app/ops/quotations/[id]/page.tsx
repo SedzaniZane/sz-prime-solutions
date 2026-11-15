@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createYocoCheckout } from "@/lib/yoco";
 import { headers } from "next/headers";
+import { billingPdfFilename } from "@/lib/billing-pdf-filename";
 import BillingPdfLink from "../../billing-pdf-link";
 import ContactIcon from "../../contact-icon";
 import BillingEnquiries from "../../billing-enquiries";
@@ -238,7 +239,7 @@ export default async function QuotationPage({
               <button type="submit" className="button-link secondary-action">Issue invoice</button>
             </form>
           )}
-          <BillingPdfLink href={`/ops/quotations/${id}/pdf`} />
+          <BillingPdfLink href={`/ops/quotations/${id}/pdf/${billingPdfFilename(quote.quotation_number)}`} />
         </div>
       </section>
 
