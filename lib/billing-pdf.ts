@@ -1,3 +1,4 @@
+import type { invoicePaymentOptions } from "./invoice-payment-options";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { PDFDocument, StandardFonts, PDFString, rgb } from "pdf-lib";
@@ -16,6 +17,7 @@ type BillingPdf = {
   items: { description: string; quantity: string; unitPrice: string; total: string }[];
   totals: [string, string][];
   note?: string;
+  paymentOptions?: ReturnType<typeof invoicePaymentOptions>;
   sandbox?: boolean;
 };
 
@@ -174,6 +176,20 @@ export async function renderBillingPdf(doc: BillingPdf) {
       Border: [0, 0, 0], A: { S: "URI", URI: PDFString.of(url) },
     });
     page.node.addAnnot(pdf.context.register(annotation));
+  }
+
+  if (doc.paymentOptions) {
+    y -= 15;
+    ensureSpace(140);
+    line();
+    y -= 18;
+    draw("PAYMENT OPTIONS", left, y, 10, true);
+    y -= 17;
+    linkedText("Request a Yoco payment link", doc.paymentOptions.yocoRequestUrl, left, y);
+    y -= 19;
+    draw("EFT", left, y, 10, true);
+    y -= 15;
+    for (const [label, value] of doc.paymentOptions.eft) paragraph(label + ": " + value);
   }
 
   const { email, whatsapp, whatsappUrl } = billingContact();

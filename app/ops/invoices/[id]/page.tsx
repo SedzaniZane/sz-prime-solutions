@@ -1,3 +1,4 @@
+import { invoicePaymentOptions } from "@/lib/invoice-payment-options";
 import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
@@ -13,6 +14,8 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   const supabase = await createClient();
   const { invoice, paidCents, balanceCents, payment, methodLabel, date, dateTime, formatMoney, items } =
     await loadInvoice(supabase, id);
+
+  const options = invoicePaymentOptions(invoice.invoice_number);
 
   return (
     <main className="quote-document-page">
@@ -79,6 +82,16 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             {methodLabel && <span> · {methodLabel}</span>}
             <span> · <time dateTime={payment.paid_at}>{dateTime.format(new Date(payment.paid_at))} SAST</time></span>
           </footer>
+        )}
+        {invoice.mode === "live" && balanceCents > 0 && (
+          <section className="quote-footer" aria-label="Payment options">
+            <strong>Payment options</strong>
+            <p><a href={options.yocoRequestUrl}>Request a Yoco payment link</a></p>
+            <p><strong>EFT</strong></p>
+            <dl>{options.eft.map(([label, value]) => (
+              <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
+            ))}</dl>
+          </section>
         )}
         <BillingEnquiries />
       </article>

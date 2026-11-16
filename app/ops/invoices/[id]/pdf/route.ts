@@ -1,3 +1,4 @@
+import { invoicePaymentOptions } from "@/lib/invoice-payment-options";
 import { createClient } from "@/utils/supabase/server";
 import { unitLabels } from "@/lib/business-unit-labels";
 import { loadInvoice } from "@/lib/billing-documents";
@@ -41,6 +42,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       ["Balance due", formatMoney(balanceCents / 100)],
     ],
     note: paymentNote,
+    paymentOptions: invoice.mode === 'live' && balanceCents > 0 ? invoicePaymentOptions(invoice.invoice_number) : undefined,
     sandbox: invoice.mode === "test",
   });
 }
