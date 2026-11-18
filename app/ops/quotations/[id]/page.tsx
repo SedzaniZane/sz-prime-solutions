@@ -1,3 +1,4 @@
+import { invoiceCheckout } from "@/lib/invoice-checkout";
 import Link from "next/link";
 import Image from "next/image";
 import { unitLabels } from "@/lib/business-unit-labels";
@@ -57,7 +58,8 @@ async function updateApproval(id: string, formData: FormData) {
         status: "awaiting_payment",
         updated_at: now,
       })
-      .eq("id", quote.service_request_id);
+      .eq("id", quote.service_request_id)
+      .in("status", ["new", "qualified", "quoted", "awaiting_payment"]);
 
     if (requestError) fail(id, requestError.message);
   }
@@ -111,6 +113,17 @@ async function createCheckout(id: string) {
   if (quoteError || !quote) fail(id, "Unable to load this quotation.");
   if (quote.approval_status !== "accepted") {
     fail(id, "The quotation must be accepted before requesting payment.");
+  }
+
+  const { data: invoice } = await supabase.from("invoices").select("id").eq("quotation_id", id).maybeSingle();
+  if (invoice) {
+    const h = await headers();
+    const host = h.get("x-forwarded-host") || h.get("host");
+    if (!host) fail(id, "Application URL unavailable.");
+    let url: string;
+    try { url = await invoiceCheckout(invoice.id, `${h.get("x-forwarded-proto") || "https"}://${host}`); }
+    catch (error) { fail(id, error instanceof Error ? error.message : "Unable to create checkout."); }
+    redirect(url);
   }
 
   const { data: existing } = await supabase
@@ -191,6 +204,10 @@ export default async function QuotationPage({
     .eq("quotation_id", id)
     .order("created_at", { ascending: false });
   const paidPayment = payments?.find((payment) => payment.status === "paid");
+  const paidTotal = (payments ?? []).filter((payment) => payment.status === "paid" &&
+    payment.metadata?.processing_mode === paidPayment?.metadata?.processing_mode)
+    .reduce((sum, payment) => sum + Math.round(Number(payment.amount) * 100), 0);
+  const fullyPaid = !!paidPayment && paidTotal >= Math.round(Number(quote.total) * 100);
   const isSandboxPayment = paidPayment?.metadata?.processing_mode === "test";
   const paidAt = paidPayment?.paid_at;
   const paidTime = paidAt && new Intl.DateTimeFormat("en-ZA", {
@@ -203,6 +220,7 @@ export default async function QuotationPage({
     apple_pay: "Apple Pay",
     google_pay: "Google Pay",
     card: "Card",
+    eft: "EFT",
   };
   const paidMethod = paidPayment?.payment_method;
   const paidMethodLabel = paidMethod && paymentMethods[paidMethod];
@@ -211,7 +229,7 @@ export default async function QuotationPage({
   const formatDate = (value: string) =>
     new Intl.DateTimeFormat("en-ZA", { dateStyle: "medium", timeZone: "Africa/Johannesburg" })
       .format(new Date(value));
-  const quoteStatus = paidPayment ? "Paid" : quote.approval_status === "accepted" ? "Awaiting payment"
+  const quoteStatus = fullyPaid ? "Paid" : paidPayment ? "Partially paid" : quote.approval_status === "accepted" ? "Awaiting payment"
     : quote.approval_status === "declined" ? "Declined"
     : quote.status === "sent" || quote.approval_status === "pending" ? "Awaiting approval" : "Draft";
   const money = (value: number | string | null) =>
@@ -249,15 +267,15 @@ export default async function QuotationPage({
         <section className="quote-payment-confirmation no-print" aria-label="Payment confirmation">
           <span className="quote-payment-check" aria-hidden="true">✓</span>
           <div>
-            <p className="eyebrow">{isSandboxPayment ? "YOCO SANDBOX PAYMENT" : "PAYMENT CONFIRMED"}</p>
-            <h2>Paid</h2>
+            <p className="eyebrow">{isSandboxPayment ? (paidPayment.provider === "eft" ? "SANDBOX EFT PAYMENT" : "YOCO SANDBOX PAYMENT") : "PAYMENT CONFIRMED"}</p>
+            <h2>{fullyPaid ? "Paid" : "Payment received"}</h2>
             <p>
               {paidMethodLabel && <strong>{paidMethodLabel}</strong>}
               {paidMethodLabel && paidTime && " · "}
               {paidTime && <time dateTime={paidAt}>{paidTime} SAST</time>}
             </p>
           </div>
-          <strong className="quote-paid-amount">{money(paidPayment.amount)}</strong>
+          <strong className="quote-paid-amount">{money(paidTotal / 100)}</strong>
         </section>
       ) : (
         <>
@@ -344,7 +362,7 @@ export default async function QuotationPage({
       </article>
 
 
-      {!paidPayment && <section className="approval-panel no-print">
+      {!fullyPaid && <section className="approval-panel no-print">
         <div>
           <p className="eyebrow">PAYMENT</p>
           <h2>Payment request</h2>

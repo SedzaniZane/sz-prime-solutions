@@ -10,6 +10,7 @@ export type YocoCheckout = {
 
 export async function createYocoCheckout(input: {
   amountCents: number;
+  idempotencyKey?: string;
   quotationId: string;
   quotationNumber: string;
   serviceRequestId: string;
@@ -28,7 +29,7 @@ export async function createYocoCheckout(input: {
     headers: {
       Authorization: `Bearer ${secretKey}`,
       "Content-Type": "application/json",
-      "Idempotency-Key": `sz-prime-${input.quotationId}`,
+      "Idempotency-Key": input.idempotencyKey ?? `sz-prime-${input.quotationId}`,
     },
     body: JSON.stringify({
       amount: input.amountCents,

@@ -1102,3 +1102,9 @@ body {
 .invoice-payment-summary {
   border-top: 2px solid #0f4c5c;
 }
+
+.invoice-eft-form { display: grid; gap: 1rem; width: 100%; min-width: 0; }
+.invoice-eft-form label { display: grid; gap: .5rem; }
+.invoice-eft-form input { width: 100%; min-width: 0; box-sizing: border-box; }
+.invoice-eft-form .invoice-eft-confirm { display: flex; align-items: flex-start; gap: .75rem; }
+.invoice-eft-confirm input { width: 1.25rem; flex-shrink: 0; margin-top: .2rem; }

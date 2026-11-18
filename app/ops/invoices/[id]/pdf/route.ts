@@ -6,7 +6,7 @@ import { billingPdfResponse } from "@/lib/billing-pdf";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { invoice, paidCents, balanceCents, payment, methodLabel, date, dateTime, formatMoney, items } =
+  const { invoice, paidCents, balanceCents, payment, methodLabel, date, dateTime, formatMoney, items, checkoutUrl } =
     await loadInvoice(await createClient(), id);
   const paymentNote = payment?.paid_at
     ? [balanceCents === 0 ? "Paid" : "Payment received", methodLabel,
@@ -44,5 +44,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     note: paymentNote,
     paymentOptions: invoice.mode === 'live' && balanceCents > 0 ? invoicePaymentOptions(invoice.invoice_number) : undefined,
     sandbox: invoice.mode === "test",
+    checkoutUrl: checkoutUrl ?? undefined,
   });
 }

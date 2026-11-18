@@ -68,62 +68,14 @@ export async function POST(request: Request) {
 
   const supabase = createAdminClient();
 
-  const { data: payment, error: paymentError } = await supabase
-    .from("payments")
-    .select("id, service_request_id, status")
-    .eq("provider", "yoco")
-    .eq("provider_reference", checkoutId)
-    .single();
-
-  if (paymentError || !payment) {
-    return NextResponse.json({ error: "Payment record not found" }, { status: 404 });
-  }
-
-  if (payment.status === "paid") {
-    return NextResponse.json({ received: true, duplicate: true });
-  }
-
-  const paidAt = new Date().toISOString();
-
-  const { error: updatePaymentError } = await supabase
-    .from("payments")
-    .update({
-      status: "paid",
-      checkout_status: "succeeded",
-      paid_at: paidAt,
-      payment_method: event?.payload?.paymentMethodDetails?.type ?? null,
-      metadata: {
-        yoco_payment_id: paymentId ?? null,
-        webhook_event_id: event?.id ?? null,
-        processing_mode: event?.payload?.mode ?? null,
-      },
-      updated_at: paidAt,
-    })
-    .eq("id", payment.id);
-
-  if (updatePaymentError) {
-    return NextResponse.json({ error: updatePaymentError.message }, { status: 500 });
-  }
-
-  await supabase
-    .from("service_requests")
-    .update({
-      status: "paid",
-      updated_at: paidAt,
-    })
-    .eq("id", payment.service_request_id);
-
-  await supabase.from("request_events").insert({
-    service_request_id: payment.service_request_id,
-    event_type: "payment_succeeded",
-    to_status: "paid",
-    detail: {
-      payment_id: payment.id,
-      yoco_checkout_id: checkoutId,
-      yoco_payment_id: paymentId ?? null,
-    },
-    created_by: "yoco_webhook",
+  const { error } = await supabase.rpc("settle_yoco_checkout", {
+    p_reference: checkoutId,
+    p_mode: event?.payload?.mode ?? null,
+    p_method: event?.payload?.paymentMethodDetails?.type ?? null,
+    p_payment_reference: paymentId ?? null,
+    p_event_id: event?.id ?? null,
   });
+  if (error) return NextResponse.json({ error: "Unable to settle payment" }, { status: 500 });
 
   return NextResponse.json({ received: true });
 }

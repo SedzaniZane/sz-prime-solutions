@@ -19,6 +19,7 @@ type BillingPdf = {
   note?: string;
   paymentOptions?: ReturnType<typeof invoicePaymentOptions>;
   sandbox?: boolean;
+  checkoutUrl?: string;
 };
 
 export async function renderBillingPdf(doc: BillingPdf) {
@@ -185,7 +186,8 @@ export async function renderBillingPdf(doc: BillingPdf) {
     y -= 18;
     draw("PAYMENT OPTIONS", left, y, 10, true);
     y -= 17;
-    linkedText("Request a Yoco payment link", doc.paymentOptions.yocoRequestUrl, left, y);
+    if (doc.checkoutUrl) linkedText("Pay securely with Yoco", doc.checkoutUrl, left, y);
+    else linkedText("Request a Yoco payment link", doc.paymentOptions.yocoRequestUrl, left, y);
     y -= 19;
     draw("EFT", left, y, 10, true);
     y -= 15;
