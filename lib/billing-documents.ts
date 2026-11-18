@@ -95,12 +95,12 @@ export async function loadInvoice(supabase: Client, id: string) {
   const formatMoney = (value: number | string) => money.format(Number(value));
   const items = invoice.items as InvoiceItem[];
   const { data: pendingCheckout, error: checkoutError } = await supabase.from("payments")
-    .select("checkout_url, amount")
+    .select("id, checkout_url, amount")
     .eq("quotation_id", invoice.quotation_id).eq("provider", "yoco").eq("status", "pending")
     .eq("currency", invoice.currency).eq("metadata->>processing_mode", invoice.mode)
     .order("created_at", { ascending: false }).limit(1).maybeSingle();
   if (checkoutError) throw new Error("Unable to load invoice payment options.");
   const checkoutUrl = pendingCheckout?.checkout_url && Math.round(Number(pendingCheckout.amount) * 100) === balanceCents
     ? pendingCheckout.checkout_url as string : null;
-  return { invoice, paidCents, balanceCents, payment, payments, methodLabel, date, dateTime, formatMoney, items, checkoutUrl };
+  return { invoice, paidCents, balanceCents, payment, payments, methodLabel, date, dateTime, formatMoney, items, checkoutUrl, hasPendingCheckout: !!pendingCheckout };
 }

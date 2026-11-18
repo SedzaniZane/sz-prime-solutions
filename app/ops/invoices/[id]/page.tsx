@@ -1,5 +1,5 @@
 import { invoicePaymentOptions } from "@/lib/invoice-payment-options";
-import { payInvoice, recordEft } from "./actions";
+import { payInvoice, recordEft, discardTestCheckout } from "./actions";
 import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
@@ -17,7 +17,7 @@ export default async function InvoicePage({ params, searchParams }: {
   const { id } = await params;
   const query = await searchParams;
   const supabase = await createClient();
-  const { invoice, paidCents, balanceCents, payment, methodLabel, date, dateTime, formatMoney, items, payments, checkoutUrl } =
+  const { invoice, paidCents, balanceCents, payment, methodLabel, date, dateTime, formatMoney, items, payments, checkoutUrl, hasPendingCheckout } =
     await loadInvoice(supabase, id);
 
   const options = invoicePaymentOptions(invoice.invoice_number);
@@ -37,6 +37,14 @@ export default async function InvoicePage({ params, searchParams }: {
       {query.payment_return === "success" && balanceCents > 0 && <p className="quote-payment-notice" role="status">Waiting for Yoco confirmation. Refresh to check the balance.</p>}
       {query.payment_return === "cancelled" && <p role="status">Checkout was cancelled. No payment has been confirmed.</p>}
       {query.payment_return === "failed" && <p className="form-error">Payment was unsuccessful.</p>}
+      {query.saved === "discarded" && <p className="form-success" role="status">Test checkout discarded. You can now record the sandbox EFT.</p>}
+      {hasPendingCheckout && balanceCents > 0 && <section className="approval-panel no-print">
+        <div><p className="eyebrow">PENDING YOCO CHECKOUT</p>
+        <p>{invoice.mode === "test" ? "A test checkout is open. Discard it before recording a test EFT. Its old link will no longer credit this invoice." : "A Yoco checkout is open. Complete it or confirm its final status with Yoco before recording EFT."}</p></div>
+        {invoice.mode === "test" && <form action={discardTestCheckout.bind(null, id)}>
+          <button type="submit">Discard test checkout</button>
+        </form>}
+      </section>}
       <article className="quote-document">
         <header className="quote-brand-header">
           <div>
@@ -109,7 +117,7 @@ export default async function InvoicePage({ params, searchParams }: {
         )}
         <BillingEnquiries />
       </article>
-      {balanceCents > 0 && <section className="approval-panel no-print">
+      {balanceCents > 0 && !hasPendingCheckout && <section className="approval-panel no-print">
         <div><p className="eyebrow">{invoice.mode === "test" ? "SANDBOX EFT" : "EFT CONFIRMATION"}</p>
         <h2>{invoice.mode === "test" ? "Record a test EFT" : "Record EFT received"}</h2>
         <p>{invoice.mode === "test" ? "This records a sandbox payment only." : "Record an EFT after checking that the funds have reached the company bank account."} Partial payments reduce the balance.</p></div>

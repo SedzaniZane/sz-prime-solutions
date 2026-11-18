@@ -41,3 +41,12 @@ export async function recordEft(id: string, form: FormData) {
   revalidatePath("/ops/quotations", "layout");
   redirect(`/ops/invoices/${id}?saved=eft`);
 }
+
+export async function discardTestCheckout(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("discard_sandbox_checkout", { p_invoice_id: id });
+  if (error) fail(id, new Error(error.message));
+  revalidatePath("/ops");
+  revalidatePath(`/ops/invoices/${id}`);
+  redirect(`/ops/invoices/${id}?saved=discarded`);
+}
