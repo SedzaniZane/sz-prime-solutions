@@ -17,6 +17,7 @@ type BillingPdf = {
   items: { description: string; quantity: string; unitPrice: string; total: string }[];
   totals: [string, string][];
   note?: string;
+  payments?: { method: string; amount: string; receivedAt: string; reference?: string }[];
   paymentOptions?: ReturnType<typeof invoicePaymentOptions>;
   sandbox?: boolean;
   checkoutUrl?: string;
@@ -166,6 +167,28 @@ export async function renderBillingPdf(doc: BillingPdf) {
   if (doc.note) {
     y -= 12;
     paragraph(doc.note);
+  }
+
+  if (doc.payments?.length) {
+    function paymentHeading() {
+      line(); y -= 18;
+      draw("PAYMENT BREAKDOWN", left, y, 10, true); y -= 20;
+    }
+    y -= 12;
+    ensureSpace(75);
+    paymentHeading();
+    for (const payment of doc.payments) {
+      const referenceLines = payment.reference ? wrap("Reference: " + payment.reference, right - left).length : 0;
+      const previousPage = page;
+      ensureSpace(45 + referenceLines * 15);
+      if (page !== previousPage) paymentHeading();
+      draw(payment.method, left, y, 10, true);
+      draw(payment.amount, right, y, 10, true, true);
+      y -= 16;
+      paragraph("Received: " + payment.receivedAt);
+      if (payment.reference) paragraph("Reference: " + payment.reference);
+      y -= 10;
+    }
   }
 
   function linkedText(label: string, url: string, x: number, baseline: number) {

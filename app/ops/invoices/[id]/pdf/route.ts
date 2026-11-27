@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from "@/lib/billing-settlement";
 import { invoicePaymentOptions } from "@/lib/invoice-payment-options";
 import { createClient } from "@/utils/supabase/server";
 import { unitLabels } from "@/lib/business-unit-labels";
@@ -6,13 +7,8 @@ import { billingPdfResponse } from "@/lib/billing-pdf";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { invoice, paidCents, balanceCents, payment, methodLabel, date, dateTime, formatMoney, items, checkoutUrl } =
+  const { invoice, paidCents, balanceCents, payments, settlementStatus, date, dateTime, formatMoney, items, checkoutUrl } =
     await loadInvoice(await createClient(), id);
-  const paymentNote = payment?.paid_at
-    ? [balanceCents === 0 ? "Paid" : "Payment received", methodLabel,
-        dateTime.format(new Date(payment.paid_at)) + " SAST"].filter(Boolean).join(" · ")
-    : undefined;
-
   return billingPdfResponse({
     title: "Invoice",
     reference: invoice.invoice_number,
@@ -41,7 +37,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       ["Amount paid", formatMoney(paidCents / 100)],
       ["Balance due", formatMoney(balanceCents / 100)],
     ],
-    note: paymentNote,
+    note: (payments ?? []).length ? (settlementStatus === "Paid" ? "Paid in full" : "Payment received; remaining balance shown above.") : undefined,
+    payments: (payments ?? []).map(entry => ({
+      method: paymentMethodLabel(entry.payment_method, entry.provider), amount: formatMoney(entry.amount),
+      receivedAt: entry.paid_at ? dateTime.format(new Date(entry.paid_at)) + " SAST" : "Not recorded",
+      reference: entry.metadata?.bank_reference ?? undefined,
+    })),
     paymentOptions: invoice.mode === 'live' && balanceCents > 0 ? invoicePaymentOptions(invoice.invoice_number) : undefined,
     sandbox: invoice.mode === "test",
     checkoutUrl: checkoutUrl ?? undefined,

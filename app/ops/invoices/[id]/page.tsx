@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from "@/lib/billing-settlement";
 import { invoicePaymentOptions } from "@/lib/invoice-payment-options";
 import { payInvoice, recordEft, discardTestCheckout } from "./actions";
 import Image from "next/image";
@@ -17,7 +18,7 @@ export default async function InvoicePage({ params, searchParams }: {
   const { id } = await params;
   const query = await searchParams;
   const supabase = await createClient();
-  const { invoice, paidCents, balanceCents, payment, methodLabel, date, dateTime, formatMoney, items, payments, checkoutUrl, hasPendingCheckout } =
+  const { invoice, paidCents, balanceCents, date, dateTime, formatMoney, items, payments, checkoutUrl, hasPendingCheckout, settlementStatus } =
     await loadInvoice(supabase, id);
 
   const options = invoicePaymentOptions(invoice.invoice_number);
@@ -25,7 +26,7 @@ export default async function InvoicePage({ params, searchParams }: {
   return (
     <main className="quote-document-page">
       <section className="quote-toolbar no-print">
-        <strong>Invoice No: {invoice.invoice_number}</strong>
+        <div><strong>Invoice No: {invoice.invoice_number}</strong><span className="quote-toolbar-status">{settlementStatus}</span></div>
         <div className="quote-toolbar-actions">
           <Link href={`/ops/quotations/${invoice.quotation_id}`} className="button-link secondary-action">Back to quotation</Link>
           <BillingPdfLink href={`/ops/invoices/${id}/pdf/${billingPdfFilename(invoice.invoice_number)}`} />
@@ -94,13 +95,14 @@ export default async function InvoicePage({ params, searchParams }: {
           <div className="quote-grand-total"><span>Balance due</span><strong>{formatMoney(balanceCents / 100)}</strong></div>
         </section>
 
-        {payment?.paid_at && (
-          <footer className="quote-footer invoice-payment-summary">
-            <strong>{balanceCents === 0 ? "Paid" : "Payment received"}</strong>
-            {methodLabel && <span> · {methodLabel}</span>}
-            <span> · <time dateTime={payment.paid_at}>{dateTime.format(new Date(payment.paid_at))} SAST</time></span>
-          </footer>
-        )}
+        {(payments ?? []).length > 0 && <section className="quote-footer invoice-payment-summary" aria-label="Payment breakdown">
+          <h2>{settlementStatus === "Paid" ? "Paid in full" : "Payment received"}</h2>
+          <ul className="invoice-payment-list">{payments!.map((entry) => <li key={entry.id}>
+            <div><strong>{paymentMethodLabel(entry.payment_method, entry.provider)}</strong><strong>{formatMoney(entry.amount)}</strong></div>
+            {entry.paid_at && <time dateTime={entry.paid_at}>{dateTime.format(new Date(entry.paid_at))} SAST</time>}
+            {entry.metadata?.bank_reference && <p>Reference: {entry.metadata.bank_reference}</p>}
+          </li>)}</ul>
+        </section>}
         {balanceCents > 0 && (
           <section className="quote-footer" aria-label="Payment options">
             <strong>Payment options</strong>
@@ -128,15 +130,6 @@ export default async function InvoicePage({ params, searchParams }: {
           <label className="invoice-eft-confirm"><input name="confirmed" type="checkbox" value="yes" required />{invoice.mode === "test" ? "I am recording a sandbox EFT for testing." : "I checked the bank account and confirm these funds were received."}</label>
           <button type="submit">{invoice.mode === "test" ? "Record test EFT" : "Record EFT payment"}</button>
         </form>
-      </section>}
-      {(payments ?? []).length > 0 && <section className="approval-panel no-print">
-        <div><p className="eyebrow">PAYMENT HISTORY</p><h2>Recorded payments</h2>
-          <ul>{payments!.map((entry) => <li key={entry.id}>
-            <strong>{formatMoney(entry.amount)}</strong> · {entry.payment_method === "eft" ? "EFT" : entry.payment_method === "apple_pay" ? "Apple Pay" : entry.payment_method === "google_pay" ? "Google Pay" : "Yoco"}
-            {entry.paid_at && <> · {dateTime.format(new Date(entry.paid_at))} SAST</>}
-            {entry.metadata?.bank_reference && <> · Reference: {entry.metadata.bank_reference}</>}
-          </li>)}</ul>
-        </div>
       </section>}
     </main>
   );

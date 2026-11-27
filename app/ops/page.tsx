@@ -66,7 +66,7 @@ export default async function OperationsPage() {
     { label: "Open leads", value: openLeads ?? 0, detail: "New or qualified opportunities" },
     { label: "Awaiting quotes", value: awaitingQuotes ?? 0, detail: "Qualified requests needing commercial action" },
     { label: "Active jobs", value: activeJobs ?? 0, detail: "Scheduled or currently in progress" },
-    { label: "Payments pending", value: pendingPayments ?? 0, detail: "Outstanding payment records" },
+    { label: "Pending checkouts", value: pendingPayments ?? 0, detail: "Yoco checkouts awaiting confirmation" },
   ];
 
   const unitActivity = unitKeys.map((key) => {
@@ -100,10 +100,9 @@ export default async function OperationsPage() {
           <a href="#requests">Service requests</a>
           <Link href="/ops/jobs">Jobs</Link>
           <a href="#units">Business units</a>
-          <a href="#partners">Partners</a>
-          <a href="#quotes">Quotations</a>
+          <a href="#requests">Quotations</a>
           <Link href="/ops/invoices">Invoices</Link>
-          <a href="#payments">Payments</a>
+          <Link href="/ops/invoices">Payments</Link>
         </nav>
 
         <div className="sidebar-note">
@@ -152,7 +151,7 @@ export default async function OperationsPage() {
           </div>
 
           <div className="table-wrap">
-            <table>
+            <table className="mobile-card-table">
               <thead>
                 <tr>
                   <th>Customer</th>
@@ -170,11 +169,11 @@ export default async function OperationsPage() {
                 ) : (
                   (recentRequests ?? []).map((request: any) => (
                     <tr key={request.id}>
-                      <td><Link className="table-link" href={`/ops/requests/${request.id}`}>{request.customers?.full_name ?? "Unknown customer"}</Link></td>
-                      <td>{unitLabels[request.unit] ?? titleCase(request.unit)}</td>
-                      <td><Link className="table-link" href={`/ops/requests/${request.id}`}>{request.service_type}</Link></td>
-                      <td>{titleCase(request.source ?? "unknown")}</td>
-                      <td><span className="status">{titleCase(request.status)}</span></td>
+                      <td data-label="Customer"><Link className="table-link" href={`/ops/requests/${request.id}`}>{request.customers?.full_name ?? "Unknown customer"}</Link></td>
+                      <td data-label="Business unit">{unitLabels[request.unit] ?? titleCase(request.unit)}</td>
+                      <td data-label="Service"><Link className="table-link" href={`/ops/requests/${request.id}`}>{request.service_type}</Link></td>
+                      <td data-label="Source">{titleCase(request.source ?? "unknown")}</td>
+                      <td data-label="Status"><span className="status">{titleCase(request.status)}</span></td>
                     </tr>
                   ))
                 )}

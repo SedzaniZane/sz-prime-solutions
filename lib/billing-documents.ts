@@ -1,3 +1,4 @@
+import { billingSettlement, paymentMethodLabel } from "./billing-settlement";
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 
@@ -71,7 +72,7 @@ export async function loadInvoice(supabase: Client, id: string) {
   if (error || !invoice) notFound();
 
   const { data: payments, error: paymentError } = await supabase.from("payments")
-    .select("id, amount, paid_at, payment_method, provider, metadata")
+    .select("id, amount, paid_at, payment_method, provider, metadata, currency, status")
     .eq("quotation_id", invoice.quotation_id)
     .eq("currency", invoice.currency)
     .eq("status", "paid")
@@ -79,12 +80,9 @@ export async function loadInvoice(supabase: Client, id: string) {
     .order("paid_at", { ascending: false });
   if (paymentError) throw new Error("Unable to verify invoice settlement.");
 
-  const paidCents = (payments ?? []).reduce((sum, payment) =>
-    sum + Math.round(Number(payment.amount) * 100), 0);
-  const balanceCents = Math.max(Math.round(Number(invoice.total) * 100) - paidCents, 0);
+  const { paidCents, balanceCents, status: settlementStatus } = billingSettlement(invoice.total, invoice.currency, invoice.mode, payments ?? []);
   const payment = payments?.[0];
-  const method = payment?.payment_method;
-  const methodLabel = method === "apple_pay" ? "Apple Pay" : method === "google_pay" ? "Google Pay" : method === "card" ? "Card" : method === "eft" ? "EFT" : null;
+  const methodLabel = payment ? paymentMethodLabel(payment.payment_method, payment.provider) : null;
   const date = new Intl.DateTimeFormat("en-ZA", {
     dateStyle: "medium", timeZone: "Africa/Johannesburg",
   });
@@ -102,5 +100,5 @@ export async function loadInvoice(supabase: Client, id: string) {
   if (checkoutError) throw new Error("Unable to load invoice payment options.");
   const checkoutUrl = pendingCheckout?.checkout_url && Math.round(Number(pendingCheckout.amount) * 100) === balanceCents
     ? pendingCheckout.checkout_url as string : null;
-  return { invoice, paidCents, balanceCents, payment, payments, methodLabel, date, dateTime, formatMoney, items, checkoutUrl, hasPendingCheckout: !!pendingCheckout };
+  return { invoice, paidCents, balanceCents, payment, payments, methodLabel, date, dateTime, formatMoney, items, checkoutUrl, hasPendingCheckout: !!pendingCheckout, settlementStatus };
 }

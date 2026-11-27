@@ -1108,3 +1108,40 @@ body {
 .invoice-eft-form input { width: 100%; min-width: 0; box-sizing: border-box; }
 .invoice-eft-form .invoice-eft-confirm { display: flex; align-items: flex-start; gap: .75rem; }
 .invoice-eft-confirm input { width: 1.25rem; flex-shrink: 0; margin-top: .2rem; }
+
+/* Billing controls use the same touch targets and typography as request forms. */
+.invoice-eft-form input:not([type="checkbox"]) {
+  min-height: 48px; border: 1px solid #cad6da; border-radius: 12px;
+  padding: 12px 13px; background: white; color: #16212a; font: inherit; font-size: 1rem;
+}
+.invoice-eft-form button, .approval-panel > form > button {
+  min-height: 48px; border: 0; border-radius: 14px; padding: 12px 18px;
+  background: #0f4c5c; color: white; font: inherit; font-weight: 750; cursor: pointer;
+}
+.invoice-eft-form input:focus-visible, .invoice-eft-form button:focus-visible,
+.approval-panel button:focus-visible { outline: 3px solid #24768a; outline-offset: 3px; }
+.invoice-eft-form input[type="checkbox"] { appearance: auto; accent-color: #0f4c5c; width: 1.25rem; height: 1.25rem; }
+.invoice-payment-summary { display: block; }
+.invoice-payment-summary h2 { font-size: 1.15rem; color: #16212a; margin: 0 0 1rem; }
+.invoice-payment-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+.invoice-payment-list li { border-bottom: 1px solid #edf1f2; padding-bottom: .75rem; overflow-wrap: anywhere; }
+.invoice-payment-list li > div { display: flex; justify-content: space-between; gap: 1rem; color: #16212a; }
+.invoice-payment-list time { display: block; margin-top: .35rem; }
+.invoice-payment-list p { margin: .35rem 0 0; }
+@media (max-width: 700px) {
+  .mobile-card-table { min-width: 0; width: 100%; }
+  .mobile-card-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .mobile-card-table tbody, .mobile-card-table tr { display: block; }
+  .mobile-card-table tr { padding: 1rem 0; border-bottom: 1px solid #dfe7e9; }
+  .mobile-card-table td { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: .75rem;
+    padding: .55rem 0; border: 0; white-space: normal; overflow-wrap: anywhere; }
+  .mobile-card-table td::before { content: attr(data-label); font-weight: 650; color: #56636c; }
+  .mobile-card-table td[colspan] { display: block; }
+  .mobile-card-table td[colspan]::before { content: none; }
+  .mobile-card-table td .status { justify-self: start; }
+  .quote-meta div { flex-wrap: wrap; gap: .35rem .75rem; }
+  .quote-meta strong { overflow-wrap: anywhere; }
+  .quote-toolbar-actions > *, .quote-toolbar-actions form button { width: 100%; }
+  .invoice-eft-form { font-size: 1rem; }
+  .invoice-eft-form input[type="datetime-local"] { max-width: 100%; }
+}

@@ -1,3 +1,4 @@
+import { billingMode, quotationStatus } from "@/lib/billing-settlement";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
@@ -215,6 +216,15 @@ export default async function RequestDetailPage({
       .maybeSingle(),
   ]);
 
+  const [{ data: quotePayments, error: paymentError }, { data: invoices, error: invoiceError }] = await Promise.all([
+    supabase.from("payments").select("quotation_id, amount, currency, status, metadata").eq("service_request_id", id).eq("status", "paid"),
+    supabase.from("invoices").select("quotation_id, mode").in("quotation_id", (quotations ?? []).map(quote => quote.id)),
+  ]);
+  if (paymentError || invoiceError) throw new Error("Unable to verify quotation settlement.");
+  const quoteLabel = (quote: NonNullable<typeof quotations>[number]) => quotationStatus(quote,
+    invoices?.find(invoice => invoice.quotation_id === quote.id)?.mode ?? billingMode(process.env.YOCO_SECRET_KEY),
+    (quotePayments ?? []).filter(payment => payment.quotation_id === quote.id));
+
   const addNoteAction = addNote.bind(null, id, customer.id);
   const updateAction = updateRequest.bind(null, id);
 
@@ -397,7 +407,7 @@ export default async function RequestDetailPage({
                             }).format(Number(quote.total ?? 0))}
                           </strong>
                         </Link>
-                        <span className="status">{String(quote.status).replaceAll("_", " ")}</span>
+                        <span className="status">{quoteLabel(quote)}</span>
                       </div>
                       <p>
                         <Link href={`/ops/quotations/${quote.id}`} className="table-link">

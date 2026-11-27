@@ -1,3 +1,4 @@
+import { billingMode, billingSettlement, quotationStatus, paymentMethodLabel } from "@/lib/billing-settlement";
 import { invoiceCheckout } from "@/lib/invoice-checkout";
 import Link from "next/link";
 import Image from "next/image";
@@ -198,17 +199,21 @@ export default async function QuotationPage({
   const approvalAction = updateApproval.bind(null, id);
   const checkoutAction = createCheckout.bind(null, id);
 
-  const { data: payments } = await supabase
+  const { data: payments, error: paymentsError } = await supabase
     .from("payments")
-    .select("provider, amount, status, paid_at, payment_method, metadata")
+    .select("provider, amount, status, paid_at, payment_method, metadata, currency")
     .eq("quotation_id", id)
     .order("created_at", { ascending: false });
-  const paidPayment = payments?.find((payment) => payment.status === "paid");
-  const paidTotal = (payments ?? []).filter((payment) => payment.status === "paid" &&
-    payment.metadata?.processing_mode === paidPayment?.metadata?.processing_mode)
-    .reduce((sum, payment) => sum + Math.round(Number(payment.amount) * 100), 0);
-  const fullyPaid = !!paidPayment && paidTotal >= Math.round(Number(quote.total) * 100);
-  const isSandboxPayment = paidPayment?.metadata?.processing_mode === "test";
+  if (paymentsError) throw new Error("Unable to verify quotation payments.");
+  const { data: invoice, error: invoiceError } = await supabase.from("invoices").select("id, invoice_number, mode")
+    .eq("quotation_id", id).maybeSingle();
+  if (invoiceError) throw new Error("Unable to load quotation billing details.");
+  const mode = invoice?.mode ?? billingMode(process.env.YOCO_SECRET_KEY);
+  const paidPayment = payments?.find(payment => payment.status === "paid" && payment.currency === quote.currency && payment.metadata?.processing_mode === mode);
+  const settlement = billingSettlement(quote.total, quote.currency, mode, payments ?? []);
+  const paidTotal = settlement.paidCents;
+  const fullyPaid = settlement.balanceCents === 0;
+  const isSandboxPayment = mode === "test";
   const paidAt = paidPayment?.paid_at;
   const paidTime = paidAt && new Intl.DateTimeFormat("en-ZA", {
     dateStyle: "medium",
@@ -216,22 +221,13 @@ export default async function QuotationPage({
     timeZone: "Africa/Johannesburg",
     hour12: false,
   }).format(new Date(paidAt));
-  const paymentMethods: Record<string, string> = {
-    apple_pay: "Apple Pay",
-    google_pay: "Google Pay",
-    card: "Card",
-    eft: "EFT",
-  };
-  const paidMethod = paidPayment?.payment_method;
-  const paidMethodLabel = paidMethod && paymentMethods[paidMethod];
-  const { data: invoice } = await supabase.from("invoices").select("id, invoice_number")
-    .eq("quotation_id", id).maybeSingle();
+  const paidMethodLabel = Array.from(new Set((payments ?? []).filter(payment => payment.status === "paid" &&
+    payment.currency === quote.currency && payment.metadata?.processing_mode === mode)
+    .map(payment => paymentMethodLabel(payment.payment_method, payment.provider)))).join(" + ");
   const formatDate = (value: string) =>
     new Intl.DateTimeFormat("en-ZA", { dateStyle: "medium", timeZone: "Africa/Johannesburg" })
       .format(new Date(value));
-  const quoteStatus = fullyPaid ? "Paid" : paidPayment ? "Partially paid" : quote.approval_status === "accepted" ? "Awaiting payment"
-    : quote.approval_status === "declined" ? "Declined"
-    : quote.status === "sent" || quote.approval_status === "pending" ? "Awaiting approval" : "Draft";
+  const quoteStatus = quotationStatus(quote, mode, payments ?? []);
   const money = (value: number | string | null) =>
     new Intl.NumberFormat("en-ZA", {
       style: "currency",
@@ -267,7 +263,7 @@ export default async function QuotationPage({
         <section className="quote-payment-confirmation no-print" aria-label="Payment confirmation">
           <span className="quote-payment-check" aria-hidden="true">✓</span>
           <div>
-            <p className="eyebrow">{isSandboxPayment ? (paidPayment.provider === "eft" ? "SANDBOX EFT PAYMENT" : "YOCO SANDBOX PAYMENT") : "PAYMENT CONFIRMED"}</p>
+            <p className="eyebrow">{isSandboxPayment ? (paidPayment.provider === "eft" ? "SANDBOX EFT PAYMENT" : "SANDBOX PAYMENT") : "PAYMENT CONFIRMED"}</p>
             <h2>{fullyPaid ? "Paid" : "Payment received"}</h2>
             <p>
               {paidMethodLabel && <strong>{paidMethodLabel}</strong>}
