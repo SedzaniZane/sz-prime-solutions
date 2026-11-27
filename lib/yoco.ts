@@ -1,3 +1,4 @@
+import { checkoutUrl } from "./payment-security";
 export type YocoCheckout = {
   id: string;
   status: string;
@@ -19,6 +20,10 @@ export async function createYocoCheckout(input: {
   failureUrl: string;
 }) {
   const secretKey = process.env.YOCO_SECRET_KEY;
+
+  if (secretKey?.startsWith("sk_live_") && process.env.BILLING_LIVE_ENABLED !== "true") {
+    throw new Error("Live payments remain disabled until launch checks are complete.");
+  }
 
   if (!secretKey) {
     throw new Error("Yoco is not configured yet. Add YOCO_SECRET_KEY in Vercel.");
@@ -56,5 +61,11 @@ export async function createYocoCheckout(input: {
     );
   }
 
+  const mode = secretKey.startsWith("sk_test_") ? "test" : secretKey.startsWith("sk_live_") ? "live" : null;
+  if (!mode || !Number.isSafeInteger(body.amount) || body.amount !== input.amountCents || body.currency !== "ZAR" ||
+      (body.processingMode && body.processingMode !== mode)) {
+    throw new Error("Yoco checkout does not match the requested payment");
+  }
+  body.redirectUrl = checkoutUrl(body.redirectUrl);
   return body as YocoCheckout;
 }

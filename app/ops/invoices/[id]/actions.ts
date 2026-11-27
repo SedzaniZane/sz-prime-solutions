@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { applicationOrigin } from "@/lib/application-origin";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { invoiceCheckout } from "@/lib/invoice-checkout";
@@ -13,10 +13,7 @@ function fail(id: string, error: unknown): never {
 export async function payInvoice(id: string) {
   let url: string;
   try {
-    const h = await headers();
-    const host = h.get("x-forwarded-host") || h.get("host");
-    if (!host) throw new Error("Application URL unavailable.");
-    url = await invoiceCheckout(id, `${h.get("x-forwarded-proto") || "https"}://${host}`);
+    url = await invoiceCheckout(id, applicationOrigin());
   } catch (error) { fail(id, error); }
   redirect(url);
 }

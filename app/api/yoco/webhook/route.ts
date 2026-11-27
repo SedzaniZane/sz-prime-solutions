@@ -1,81 +1,49 @@
-import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { MAX_WEBHOOK_BYTES, successfulPayment, verifyYocoSignature } from "@/lib/payment-security";
 
-function verifyYocoSignature(rawBody: string, headers: Headers) {
-  const id = headers.get("webhook-id");
-  const timestamp = headers.get("webhook-timestamp");
-  const signatureHeader = headers.get("webhook-signature");
-  const secret = process.env.YOCO_WEBHOOK_SECRET;
-
-  if (!id || !timestamp || !signatureHeader || !secret?.startsWith("whsec_")) {
-    return false;
-  }
-
-  const timestampSeconds = Number(timestamp);
-  if (!Number.isFinite(timestampSeconds)) return false;
-
-  const ageMs = Math.abs(Date.now() - timestampSeconds * 1000);
-  if (ageMs > 3 * 60 * 1000) return false;
-
-  const signedContent = `${id}.${timestamp}.${rawBody}`;
-  const secretBytes = Buffer.from(secret.split("_")[1], "base64");
-  const expected = crypto
-    .createHmac("sha256", secretBytes)
-    .update(signedContent)
-    .digest("base64");
-
-  const signatures = signatureHeader
-    .split(" ")
-    .map((entry) => entry.split(","))
-    .filter(([version, value]) => version === "v1" && value)
-    .map(([, value]) => value);
-
-  return signatures.some((signature) => {
-    const expectedBuffer = Buffer.from(expected);
-    const actualBuffer = Buffer.from(signature);
-    return (
-      expectedBuffer.length === actualBuffer.length &&
-      crypto.timingSafeEqual(expectedBuffer, actualBuffer)
-    );
-  });
-}
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const rawBody = await request.text();
-
-  if (!verifyYocoSignature(rawBody, request.headers)) {
+  if (Number(request.headers.get("content-length")) > MAX_WEBHOOK_BYTES) {
+    return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+  }
+  // Bound the stream too: Content-Length is not trustworthy and may be absent.
+  const reader = request.body?.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  if (reader) {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_WEBHOOK_BYTES) {
+        await reader.cancel();
+        return NextResponse.json({ error: "Payload too large" }, { status: 413 });
+      }
+      chunks.push(value);
+    }
+  }
+  const rawBody = Buffer.concat(chunks).toString("utf8");
+  if (!verifyYocoSignature(rawBody, request.headers, process.env.YOCO_WEBHOOK_SECRET)) {
     return NextResponse.json({ error: "Invalid webhook signature" }, { status: 403 });
   }
-
-  let event: any;
-  try {
-    event = JSON.parse(rawBody);
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  if (event?.type !== "payment.succeeded") {
-    return NextResponse.json({ received: true });
-  }
-
-  const checkoutId = event?.payload?.metadata?.checkoutId;
-  const paymentId = event?.payload?.id;
-
-  if (!checkoutId) {
-    return NextResponse.json({ error: "Missing checkout reference" }, { status: 400 });
-  }
-
-  const supabase = createAdminClient();
-
-  const { error } = await supabase.rpc("settle_yoco_checkout", {
-    p_reference: checkoutId,
-    p_mode: event?.payload?.mode ?? null,
-    p_method: event?.payload?.paymentMethodDetails?.type ?? null,
-    p_payment_reference: paymentId ?? null,
-    p_event_id: event?.id ?? null,
+  let event;
+  try { event = JSON.parse(rawBody); }
+  catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
+  if (event?.type !== "payment.succeeded") return NextResponse.json({ received: true });
+  let payment;
+  try { payment = successfulPayment(event); }
+  catch { return NextResponse.json({ error: "Invalid payment event" }, { status: 400 }); }
+  const { error } = await createAdminClient().rpc("settle_yoco_checkout_verified", {
+    p_reference: payment.reference, p_mode: payment.mode, p_method: payment.method,
+    p_payment_reference: payment.paymentId, p_event_id: payment.eventId,
+    p_amount_cents: payment.amountCents, p_currency: payment.currency,
   });
-  if (error) return NextResponse.json({ error: "Unable to settle payment" }, { status: 500 });
-
+  if (error) {
+    // Only a code is logged; never log payloads, keys or customer details.
+    console.error("Yoco settlement rejected", { code: error.code });
+    return NextResponse.json({ error: "Unable to settle payment" }, { status: 500 });
+  }
   return NextResponse.json({ received: true });
 }

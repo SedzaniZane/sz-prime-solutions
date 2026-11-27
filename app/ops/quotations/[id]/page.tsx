@@ -5,8 +5,7 @@ import Image from "next/image";
 import { unitLabels } from "@/lib/business-unit-labels";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { createYocoCheckout } from "@/lib/yoco";
-import { headers } from "next/headers";
+import { applicationOrigin } from "@/lib/application-origin";
 import { billingPdfFilename } from "@/lib/billing-pdf-filename";
 import BillingPdfLink from "../../billing-pdf-link";
 import ContactIcon from "../../contact-icon";
@@ -116,71 +115,16 @@ async function createCheckout(id: string) {
     fail(id, "The quotation must be accepted before requesting payment.");
   }
 
-  const { data: invoice } = await supabase.from("invoices").select("id").eq("quotation_id", id).maybeSingle();
-  if (invoice) {
-    const h = await headers();
-    const host = h.get("x-forwarded-host") || h.get("host");
-    if (!host) fail(id, "Application URL unavailable.");
-    let url: string;
-    try { url = await invoiceCheckout(invoice.id, `${h.get("x-forwarded-proto") || "https"}://${host}`); }
-    catch (error) { fail(id, error instanceof Error ? error.message : "Unable to create checkout."); }
-    redirect(url);
-  }
-
-  const { data: existing } = await supabase
-    .from("payments")
-    .select("id, checkout_url, status")
-    .eq("quotation_id", id)
-    .eq("provider", "yoco")
-    .in("status", ["pending", "paid"])
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (existing?.status === "paid") {
-    fail(id, "This quotation has already been paid.");
-  }
-
-  if (existing?.checkout_url) {
-    redirect(existing.checkout_url);
-  }
-
-  const headerStore = await headers();
-  const host = headerStore.get("x-forwarded-host") || headerStore.get("host");
-  const proto = headerStore.get("x-forwarded-proto") || "https";
-  if (!host) fail(id, "Unable to determine the application URL.");
-
-  const origin = `${proto}://${host}`;
-  const amountCents = Math.round(Number(quote.total) * 100);
-
-  const checkout = await createYocoCheckout({
-    amountCents,
-    quotationId: quote.id,
-    quotationNumber: quote.quotation_number,
-    serviceRequestId: quote.service_request_id,
-    successUrl: `${origin}/ops/quotations/${id}?payment_return=success`,
-    cancelUrl: `${origin}/ops/quotations/${id}?payment_return=cancelled`,
-    failureUrl: `${origin}/ops/quotations/${id}?payment_return=failed`,
-  });
-
-  const { error: paymentError } = await supabase.rpc("create_pending_payment", {
-    p_service_request_id: quote.service_request_id,
-    p_quotation_id: quote.id,
-    p_provider: "yoco",
-    p_provider_reference: checkout.id,
-    p_checkout_url: checkout.redirectUrl,
-    p_amount: Number(quote.total),
-    p_currency: quote.currency ?? "ZAR",
-    p_checkout_status: checkout.status,
-    p_metadata: {
-      quotation_number: quote.quotation_number,
-      processing_mode: checkout.processingMode ?? null,
-    },
-  });
-
-  if (paymentError) fail(id, paymentError.message);
-
-  redirect(checkout.redirectUrl);
+  // All new checkouts use an immutable invoice and a balance reservation.
+  // This also eliminates the legacy unreserved quotation checkout path.
+  const mode = billingMode(process.env.YOCO_SECRET_KEY);
+  if (!mode) fail(id, "Unable to determine the billing environment.");
+  const { data: invoiceId, error } = await supabase.rpc("issue_invoice", { p_quotation_id: id, p_mode: mode });
+  if (error || !invoiceId) fail(id, "Unable to issue the invoice for checkout.");
+  let url: string;
+  try { url = await invoiceCheckout(invoiceId, applicationOrigin()); }
+  catch (error) { fail(id, error instanceof Error ? error.message : "Unable to create checkout."); }
+  redirect(url);
 }
 
 export default async function QuotationPage({

@@ -1,6 +1,9 @@
 import "./globals.css";
 import type { Viewport } from "next";
 
+// Dynamic rendering is required so every HTML response gets fresh CSP nonces.
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "SZ Prime Solutions",
   description: "One company. Multiple specialised solutions. One coordinated customer experience.",

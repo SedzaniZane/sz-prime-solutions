@@ -7,8 +7,8 @@ type CookieToSet = {
   options: CookieOptions;
 };
 
-export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({ request });
+export async function updateSession(request: NextRequest, forwardedHeaders: Headers = request.headers) {
+  let response = NextResponse.next({ request: { headers: forwardedHeaders } });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,7 +20,8 @@ export async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet: CookieToSet[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
+          forwardedHeaders.set("cookie", request.cookies.toString());
+          response = NextResponse.next({ request: { headers: forwardedHeaders } });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options),
           );
@@ -36,6 +37,16 @@ export async function updateSession(request: NextRequest) {
     url.pathname = "/login";
     url.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(url);
+  }
+
+  if (request.nextUrl.pathname.startsWith("/ops") && user) {
+    const { data: assurance, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assuranceError) return NextResponse.redirect(new URL("/login/mfa", request.url));
+    if (assurance?.nextLevel === "aal2" && assurance.currentLevel !== "aal2") {
+      return NextResponse.redirect(new URL("/login/mfa", request.url));
+    }
+    const { data: active, error } = await supabase.rpc("is_active_staff");
+    if (error || active !== true) return NextResponse.redirect(new URL("/access-denied", request.url));
   }
 
   if (request.nextUrl.pathname === "/login" && user) {

@@ -117,6 +117,7 @@ export default async function OperationsPage() {
             <p className="eyebrow">MASTER CONTROL</p>
             <h2>Here is the live SZ Prime operating picture.</h2>
           </div>
+          <a className="new-request" href="/ops/security">Account security</a>
           <a className="new-request" href="/">Public site</a>
         </header>
 

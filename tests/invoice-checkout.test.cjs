@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const ts = require('typescript');
 
-function setup({ existingUrl = null, reserveError = null, attachError = null } = {}) {
+function setup({ existingUrl = null, reserveError = null, attachError = null, mode = "test" } = {}) {
   const calls = [];
   const client = {
     async rpc(name, args) {
@@ -26,7 +26,9 @@ function setup({ existingUrl = null, reserveError = null, attachError = null } =
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
   }).outputText;
   const exports = {};
-  vm.runInNewContext(source, { exports, process: { env: { YOCO_SECRET_KEY: 'sk_test_example' } }, require(name) {
+  vm.runInNewContext(source, { exports, process: { env: { YOCO_SECRET_KEY: `sk_${mode}_example` } }, require(name) {
+    if (name === './payment-security') return { checkoutUrl: value => { if (!value.startsWith('https://c.yoco.com/')) throw new Error('Invalid destination'); return value; } };
+    if (name === '@/utils/supabase/admin') return { createAdminClient: () => client };
     if (name === '@/utils/supabase/server') return { createClient: async () => client };
     if (name === './yoco') return { createYocoCheckout: async (args) => {
       calls.push({ name: 'yoco', args });
@@ -60,4 +62,10 @@ test('refuses checkout when database balance or environment validation fails', a
 test('does not return a checkout URL if reservation attachment fails', async () => {
   const { run } = setup({ attachError: { message: 'Checkout does not match the reserved invoice balance' } });
   await assert.rejects(run('invoice-1', 'https://example.com'), /reserved invoice balance/);
+});
+
+test('live checkout reuse stays blocked until explicitly enabled', async () => {
+  const {run,calls}=setup({mode:'live',existingUrl:'https://c.yoco.com/existing'});
+  await assert.rejects(run('invoice-1','https://example.com'), /Live payments remain disabled/);
+  assert.equal(calls.length,0);
 });
